@@ -1,6 +1,7 @@
 # smartfood
 
-A new Flutter project.
+SmartFood: Personalized food and restaurant
+recommendation app using LLM
 
 ## Getting Started
 
