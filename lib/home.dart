@@ -31,7 +31,7 @@ class _HomeState extends State<Home> {
       setState(() {
         _user = user;
       });
-      _initializeFirebase();
+      _initializeFirebase(); // Once signed in, initialize Firebase
     } else {
       setState(() {
         _initializationMessage = "Google Sign-In failed!";
@@ -196,6 +196,43 @@ class _HomeState extends State<Home> {
             ),
         ],
       ),
+    );
+  }
+}
+class CustomSearchDelegate extends SearchDelegate {
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: Icon(Icons.clear),
+        onPressed: () {
+          query = "";
+        },
+      ),
+    ];
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    return IconButton(
+      icon: Icon(Icons.arrow_back),
+      onPressed: () {
+        close(context, null);
+      },
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    return Center(
+      child: Text(query),
+    );
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    return Center(
+      child: Text("Search suggestions"),
     );
   }
 }
