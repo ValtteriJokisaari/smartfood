@@ -31,7 +31,7 @@ class _HomeState extends State<Home> {
       setState(() {
         _user = user;
       });
-      _initializeFirebase(); // Once signed in, initialize Firebase
+      _initializeFirebase();
     } else {
       setState(() {
         _initializationMessage = "Google Sign-In failed!";
@@ -199,6 +199,7 @@ class _HomeState extends State<Home> {
     );
   }
 }
+
 class CustomSearchDelegate extends SearchDelegate {
   @override
   List<Widget> buildActions(BuildContext context) {
