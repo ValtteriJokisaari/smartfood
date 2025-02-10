@@ -1,7 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class Home extends StatelessWidget {
+class Home extends StatefulWidget {
   const Home({super.key});
+
+  @override
+  State<Home> createState() => _HomeState();
+}
+
+class _HomeState extends State<Home> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  List<User?> _firebaseUsers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUsers();
+  }
+
+  Future<void> _fetchUsers() async {
+    final User? user = _auth.currentUser;
+
+    setState(() {
+      if (user != null) {
+        _firebaseUsers.add(user);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,17 +52,34 @@ class Home extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
-        child: Text(
-          'Welcome to SmartFood',
-          style: TextStyle(
-            fontSize: 20.0,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 2.0,
-            color: Colors.grey[600],
-            fontFamily: 'Poiret',
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'Welcome to SmartFood',
+              style: TextStyle(
+                fontSize: 20.0,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 2.0,
+                color: Colors.grey[600],
+                fontFamily: 'Poiret',
+              ),
+            ),
           ),
-        ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: _firebaseUsers.length,
+              itemBuilder: (context, index) {
+                final user = _firebaseUsers[index];
+                return ListTile(
+                  title: Text(user?.email ?? 'No Email'),
+                  subtitle: Text(user?.displayName ?? 'No Display Name'),
+                );
+              },
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.red[600],

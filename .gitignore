@@ -46,3 +46,5 @@ app.*.map.json
 
 # Firebase related
 # api keys etc :DDD
+.env
+android/app/google-services.json
