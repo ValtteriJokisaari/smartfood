@@ -16,15 +16,9 @@ class _HomeState extends State<Home> {
 
   User? _user;
   bool _isFirebaseInitialized = false;
-  String _initializationMessage = "Initializing Firebase...";
+  String _initializationMessage = "";
   String _firebaseAppId = "";
   List<User?> _firebaseUsers = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _signInWithGoogle(); // First, authenticate with Google
-  }
 
   Future<void> _signInWithGoogle() async {
     User? user = await _authService.signInWithGoogle();
@@ -32,7 +26,7 @@ class _HomeState extends State<Home> {
       setState(() {
         _user = user;
       });
-      _initializeFirebase(); // Once signed in, initialize Firebase
+      _initializeFirebase();
     } else {
       setState(() {
         _initializationMessage = "Google Sign-In failed!";
@@ -123,22 +117,48 @@ class _HomeState extends State<Home> {
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              _initializationMessage,
-              style: TextStyle(fontSize: 16, color: Colors.blue),
+          if (_user == null) ...[
+            // Only show Google sign-in button if user is not signed in
+            ElevatedButton(
+              onPressed: _signInWithGoogle,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[600],
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+              ),
+              child: Text("Sign in with Google"),
+            )
+          ] else ...[
+            // After sign-in, show user details
+            CircleAvatar(
+              radius: 40,
+              backgroundImage: NetworkImage(_user?.photoURL ?? ""),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              "Firebase App ID: $_firebaseAppId",
-              style: TextStyle(fontSize: 16, color: Colors.blue),
+            SizedBox(height: 10),
+            Text("Hello, ${_user?.displayName ?? "User"}!"),
+            Text(_user?.email ?? ""),
+          ],
+          
+          if (_isFirebaseInitialized) ...[
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                _initializationMessage,
+                style: TextStyle(fontSize: 16, color: Colors.blue),
+              ),
             ),
-          ),
-          if (!_isFirebaseInitialized)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                "Firebase App ID: $_firebaseAppId",
+                style: TextStyle(fontSize: 16, color: Colors.blue),
+              ),
+            ),
+          ],
+
+          if (!_isFirebaseInitialized && _user != null) 
             Center(child: CircularProgressIndicator()),
+
           if (_firebaseUsers.isEmpty && _isFirebaseInitialized)
             Center(child: Text("No users found.", style: TextStyle(fontSize: 18))),
           if (_firebaseUsers.isNotEmpty)
@@ -154,33 +174,12 @@ class _HomeState extends State<Home> {
                 },
               ),
             ),
-          if (_user == null)
-            ElevatedButton(
-              onPressed: _signInWithGoogle,
-              child: Text("Sign in with Google"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red[600],
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-              ),
-            )
-          else
-            Column(
-              children: [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundImage: NetworkImage(_user?.photoURL ?? ""),
-                ),
-                SizedBox(height: 10),
-                Text("Hello, ${_user?.displayName ?? "User"}!"),
-                Text(_user?.email ?? ""),
-              ],
-            ),
         ],
       ),
     );
   }
 }
+
 class CustomSearchDelegate extends SearchDelegate {
   @override
   List<Widget> buildActions(BuildContext context) {
