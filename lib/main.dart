@@ -1,9 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import "home.dart";
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'firebase_options.dart';
+import 'screens/signin.dart';
+import 'screens/home.dart';
 
-void main() {
-  runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
+
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  } catch (e) {
+    print("Error initializing Firebase: $e");
+  }
+
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -12,21 +24,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SmartFood',
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        fontFamily: 'Poiret',
-      ),
-      home: BlocProvider(
-        create: (context) => NavigationCubit(),
-        child: Home(),
-      ),
+      title: "SmartFood",
+      theme: ThemeData(primarySwatch: Colors.green, fontFamily: "Poiret"),
+      initialRoute: "/",  // Start at Sign In
+      routes: {
+        "/": (context) => const SignInScreen(), 
+        "/home": (context) => const Home(),
+      },
     );
   }
-}
-
-class NavigationCubit extends Cubit<int> {
-  NavigationCubit() : super(0);
-
-  void changePage(int index) => emit(index);
 }

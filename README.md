@@ -1,17 +1,16 @@
-# smartfood
+# Smartfood
 
 SmartFood: Personalized food and restaurant
 recommendation app using LLM
 
-## Getting Started
+## Description
+SmartFood, a mobile application that
+leverages Large Language Models (LLMs) to provide personalized food and restaurant
+recommendations. The project aims to address challenges such as managing dynamic and
+expanding restaurant menus, integrating nutritional databases, and simplifying user engagement. By
+utilizing LLM-based text analysis, common datasets, and user feedback, the app will promote
+healthier dining choices and tailored food recommendations.
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+The project focuses on creating a scalable, user-friendly platform with advanced recommendation
+features powered by artificial intelligence. The project provides better choices for the consumer
+which will impact their health positively.
