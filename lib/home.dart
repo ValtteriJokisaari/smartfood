@@ -1,6 +1,7 @@
 import "package:flutter/material.dart";
 import "package:firebase_auth/firebase_auth.dart";
 import "package:firebase_core/firebase_core.dart";
+import "auth_service.dart";
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -10,42 +11,71 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  final AuthService _authService = AuthService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  List<User?> _firebaseUsers = [];
-  bool _isInitialized = false;
+
+  User? _user;
+  bool _isFirebaseInitialized = false;
   String _initializationMessage = "Initializing Firebase...";
   String _firebaseAppId = "";
+  List<User?> _firebaseUsers = [];
 
   @override
   void initState() {
     super.initState();
-    _initializeFirebase();
+    _signInWithGoogle(); // First, authenticate with Google
+  }
+
+  Future<void> _signInWithGoogle() async {
+    User? user = await _authService.signInWithGoogle();
+    if (user != null) {
+      setState(() {
+        _user = user;
+      });
+      _initializeFirebase(); // Once signed in, initialize Firebase
+    } else {
+      setState(() {
+        _initializationMessage = "Google Sign-In failed!";
+      });
+    }
   }
 
   Future<void> _initializeFirebase() async {
     try {
-      await Firebase.initializeApp();
       setState(() {
-        _isInitialized = true;
-        _initializationMessage = "Firebase initialized successfully! :DDD";
+        _initializationMessage = "Initializing Firebase...";
+      });
+
+      await FirebaseAuth.instance.authStateChanges().first;
+
+      setState(() {
+        _isFirebaseInitialized = true;
+        _initializationMessage = "Firebase initialized successfully!";
         _firebaseAppId = Firebase.app().options.appId ?? "App ID not available";
       });
+
       _fetchUsers();
     } catch (e) {
       setState(() {
-        _isInitialized = false;
+        _isFirebaseInitialized = false;
         _initializationMessage = "Firebase init failed: $e";
       });
     }
   }
 
   Future<void> _fetchUsers() async {
-    final User? user = _auth.currentUser;
-
+    final User? currentUser = _auth.currentUser;
     setState(() {
-      if (user != null) {
-        _firebaseUsers.add(user);
-      }
+      _firebaseUsers = currentUser != null ? [currentUser] : [];
+    });
+  }
+
+  Future<void> _handleSignOut() async {
+    await _authService.signOut();
+    setState(() {
+      _user = null;
+      _isFirebaseInitialized = false;
+      _firebaseUsers.clear();
     });
   }
 
@@ -55,9 +85,9 @@ class _HomeState extends State<Home> {
       appBar: AppBar(
         title: Text("SmartFood"),
         titleTextStyle: TextStyle(
-            fontSize: 25.0,
-            fontWeight: FontWeight.bold,
-            fontFamily: "Poiret"
+          fontSize: 25.0,
+          fontWeight: FontWeight.bold,
+          fontFamily: "Poiret",
         ),
         centerTitle: true,
         backgroundColor: Colors.green[700],
@@ -66,11 +96,16 @@ class _HomeState extends State<Home> {
             icon: Icon(Icons.search),
             onPressed: () {
               showSearch(
-                  context: context,
-                  delegate: CustomSearchDelegate()
+                context: context,
+                delegate: CustomSearchDelegate(),
               );
             },
           ),
+          if (_user != null)
+            IconButton(
+              icon: Icon(Icons.logout),
+              onPressed: _handleSignOut,
+            ),
         ],
       ),
       body: Column(
@@ -102,14 +137,10 @@ class _HomeState extends State<Home> {
               style: TextStyle(fontSize: 16, color: Colors.blue),
             ),
           ),
-          if (!_isInitialized)
-            Center(
-              child: CircularProgressIndicator(),
-            ),
-          if (_firebaseUsers.isEmpty && _isInitialized)
-            Center(
-              child: Text("No users found.", style: TextStyle(fontSize: 18)),
-            ),
+          if (!_isFirebaseInitialized)
+            Center(child: CircularProgressIndicator()),
+          if (_firebaseUsers.isEmpty && _isFirebaseInitialized)
+            Center(child: Text("No users found.", style: TextStyle(fontSize: 18))),
           if (_firebaseUsers.isNotEmpty)
             Expanded(
               child: ListView.builder(
@@ -123,17 +154,33 @@ class _HomeState extends State<Home> {
                 },
               ),
             ),
+          if (_user == null)
+            ElevatedButton(
+              onPressed: _signInWithGoogle,
+              child: Text("Sign in with Google"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[600],
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+              ),
+            )
+          else
+            Column(
+              children: [
+                CircleAvatar(
+                  radius: 40,
+                  backgroundImage: NetworkImage(_user?.photoURL ?? ""),
+                ),
+                SizedBox(height: 10),
+                Text("Hello, ${_user?.displayName ?? "User"}!"),
+                Text(_user?.email ?? ""),
+              ],
+            ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.red[600],
-        onPressed: () {},
-        child: Text("click"),
       ),
     );
   }
 }
-
 class CustomSearchDelegate extends SearchDelegate {
   @override
   List<Widget> buildActions(BuildContext context) {
