@@ -23,7 +23,7 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    _signInWithGoogle();
+    _signInWithGoogle(); // First, authenticate with Google
   }
 
   Future<void> _signInWithGoogle() async {
@@ -32,7 +32,7 @@ class _HomeState extends State<Home> {
       setState(() {
         _user = user;
       });
-      _initializeFirebase();
+      _initializeFirebase(); // Once signed in, initialize Firebase
     } else {
       setState(() {
         _initializationMessage = "Google Sign-In failed!";
@@ -84,9 +84,23 @@ class _HomeState extends State<Home> {
     return Scaffold(
       appBar: AppBar(
         title: Text("SmartFood"),
+        titleTextStyle: TextStyle(
+          fontSize: 25.0,
+          fontWeight: FontWeight.bold,
+          fontFamily: "Poiret",
+        ),
         centerTitle: true,
         backgroundColor: Colors.green[700],
         actions: [
+          IconButton(
+            icon: Icon(Icons.search),
+            onPressed: () {
+              showSearch(
+                context: context,
+                delegate: CustomSearchDelegate(),
+              );
+            },
+          ),
           if (_user != null)
             IconButton(
               icon: Icon(Icons.logout),
@@ -94,66 +108,113 @@ class _HomeState extends State<Home> {
             ),
         ],
       ),
-      body: Center(
-        child: !_isFirebaseInitialized
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 20),
-                  Text(
-                    _initializationMessage,
-                    style: TextStyle(fontSize: 16, color: Colors.blue),
-                  ),
-                ],
-              )
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (_user == null)
-                    ElevatedButton(
-                      onPressed: _signInWithGoogle,
-                      child: Text("Sign in with Google"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red[600],
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                      ),
-                    )
-                  else ...[
-                    CircleAvatar(
-                      radius: 40,
-                      backgroundImage: NetworkImage(_user?.photoURL ?? ""),
-                    ),
-                    SizedBox(height: 10),
-                    Text("Hello, ${_user?.displayName ?? "User"}!"),
-                    Text(_user?.email ?? ""),
-                    SizedBox(height: 20),
-                    Text(
-                      "Firebase App ID: $_firebaseAppId",
-                      style: TextStyle(fontSize: 16, color: Colors.blue),
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      _firebaseUsers.isEmpty ? "No users found in Firebase." : "Firebase users testii:",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: _firebaseUsers.length,
-                        itemBuilder: (context, index) {
-                          final user = _firebaseUsers[index];
-                          return ListTile(
-                            title: Text(user?.email ?? "No Email"),
-                            subtitle: Text(user?.displayName ?? "No Display Name"),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ],
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              "Welcome to SmartFood",
+              style: TextStyle(
+                fontSize: 20.0,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 2.0,
+                color: Colors.grey[600],
+                fontFamily: "Poiret",
               ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              _initializationMessage,
+              style: TextStyle(fontSize: 16, color: Colors.blue),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              "Firebase App ID: $_firebaseAppId",
+              style: TextStyle(fontSize: 16, color: Colors.blue),
+            ),
+          ),
+          if (!_isFirebaseInitialized)
+            Center(child: CircularProgressIndicator()),
+          if (_firebaseUsers.isEmpty && _isFirebaseInitialized)
+            Center(child: Text("No users found.", style: TextStyle(fontSize: 18))),
+          if (_firebaseUsers.isNotEmpty)
+            Expanded(
+              child: ListView.builder(
+                itemCount: _firebaseUsers.length,
+                itemBuilder: (context, index) {
+                  final user = _firebaseUsers[index];
+                  return ListTile(
+                    title: Text(user?.email ?? "No Email"),
+                    subtitle: Text(user?.displayName ?? "No Display Name"),
+                  );
+                },
+              ),
+            ),
+          if (_user == null)
+            ElevatedButton(
+              onPressed: _signInWithGoogle,
+              child: Text("Sign in with Google"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[600],
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+              ),
+            )
+          else
+            Column(
+              children: [
+                CircleAvatar(
+                  radius: 40,
+                  backgroundImage: NetworkImage(_user?.photoURL ?? ""),
+                ),
+                SizedBox(height: 10),
+                Text("Hello, ${_user?.displayName ?? "User"}!"),
+                Text(_user?.email ?? ""),
+              ],
+            ),
+        ],
       ),
+    );
+  }
+}
+class CustomSearchDelegate extends SearchDelegate {
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: Icon(Icons.clear),
+        onPressed: () {
+          query = "";
+        },
+      ),
+    ];
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    return IconButton(
+      icon: Icon(Icons.arrow_back),
+      onPressed: () {
+        close(context, null);
+      },
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    return Center(
+      child: Text(query),
+    );
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    return Center(
+      child: Text("Search suggestions"),
     );
   }
 }
