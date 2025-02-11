@@ -1,7 +1,8 @@
-import "package:flutter/material.dart";
-import "package:firebase_auth/firebase_auth.dart";
-import "package:firebase_core/firebase_core.dart";
-import "auth_service.dart";
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'auth_service.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';  // Import flutter_dotenv
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -19,6 +20,10 @@ class _HomeState extends State<Home> {
   String _initializationMessage = "";
   String _firebaseAppId = "";
   List<User?> _firebaseUsers = [];
+
+  // Access environment variables
+  String? firebaseApiKey = dotenv.env['FIREBASE_API_KEY'];  // Example Firebase API Key
+  String? firebaseProjectId = dotenv.env['FIREBASE_PROJECT_ID'];  // Example Firebase Project ID
 
   Future<void> _signInWithGoogle() async {
     User? user = await _authService.signInWithGoogle();
@@ -115,6 +120,21 @@ class _HomeState extends State<Home> {
                 color: Colors.grey[600],
                 fontFamily: "Poiret",
               ),
+            ),
+          ),
+          // Display environment variables (optional)
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              "Firebase API Key: $firebaseApiKey",  // Display Firebase API key
+              style: TextStyle(fontSize: 16, color: Colors.blue),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              "Firebase Project ID: $firebaseProjectId",  // Display Firebase Project ID
+              style: TextStyle(fontSize: 16, color: Colors.blue),
             ),
           ),
           if (_user == null) ...[
