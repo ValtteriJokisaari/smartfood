@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartfood/auth_service.dart';
-import 'package:smartfood/screens/survey.dart';
 import 'package:smartfood/food_scraper.dart';
-import 'package:smartfood/openai_service.dart';
+import 'package:smartfood/screens/signin.dart';  // Import SignIn screen
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -17,14 +15,11 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   final AuthService _authService = AuthService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final OpenAIService _openAIService = OpenAIService();
   final FoodScraper _foodScraper = FoodScraper();
 
   final TextEditingController _cityController = TextEditingController();
 
   User? _user;
-  bool _isFirebaseInitialized = false;
-  String _initializationMessage = "";
   List<Map<String, String>> _lunchMenus = [];
   String _scraperMessage = "";
   String _aiResponse = "";
@@ -105,8 +100,13 @@ class _HomeState extends State<Home> {
     await _authService.signOut();
     setState(() {
       _user = null;
-      _isFirebaseInitialized = false;
     });
+
+    // Navigate to SignIn screen after sign out
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => SignInScreen()),  // Replace with your sign-in screen
+    );
   }
 
   @override

@@ -23,7 +23,6 @@ class FoodScraper {
           String name = restaurant.querySelector('.item-header h3 a')?.text.trim() ?? "Unknown";
           String menu = "";
           String link = "https://www.lounaat.info" + (restaurant.querySelector('.item-header h3 a')?.attributes['href'] ?? "#");
-          String distance = restaurant.querySelector('.item-footer .dist')?.text.trim() ?? "N/A";
           String openingHours = restaurant.querySelector('.item-header .lunch')?.text.trim() ?? "N/A";
 
           var menuItems = restaurant.querySelectorAll('.menu-item');
@@ -47,7 +46,6 @@ class FoodScraper {
             'name': name,
             'menu': menu.isNotEmpty ? menu : "No menu available",
             'link': link,
-            'distance': distance,
             'opening_hours': openingHours,
           });
         }
@@ -71,7 +69,6 @@ class FoodScraper {
 
     for (var restaurant in menus) {
       prompt.writeln("🍽 **${restaurant['name']}**");
-      prompt.writeln("📌 *Distance:* ${restaurant['distance']}");
       prompt.writeln("🕒 *Opening Hours:* ${restaurant['opening_hours']}");
       prompt.writeln("📜 *Menu:*\n${restaurant['menu']}");
       prompt.writeln("🔗 [More Info](${restaurant['link']})\n");
