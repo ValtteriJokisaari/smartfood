@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:smartfood/auth_service.dart';
 import 'package:smartfood/openai_service.dart';  // Ensure OpenAI service is imported
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:smartfood/screens/survey.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -17,6 +19,11 @@ class _HomeState extends State<Home> {
 
   String _aiResponse = ""; // Store AI response
   User? _user = FirebaseAuth.instance.currentUser; // Get current user
+
+  String _dietaryRestrictions = "None";
+  String _goal = "General health";
+  String _cuisine = "Any";
+  int _mealsPerDay = 3;
 
   Future<void> _handleSignOut() async {
     await _authService.signOut();
@@ -37,6 +44,33 @@ class _HomeState extends State<Home> {
       });
     }
   }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool('hasPreferences') ?? false) {
+      setState(() {
+        _dietaryRestrictions = prefs.getString('dietaryRestrictions') ?? "None";
+        _goal = prefs.getString('goal') ?? "General health";
+        _cuisine = prefs.getString('cuisine') ?? "Any";
+        _mealsPerDay = prefs.getInt('mealsPerDay') ?? 3;
+      });
+
+      print("Loaded Preferences: $_dietaryRestrictions, $_goal, $_cuisine, $_mealsPerDay");
+    } else {
+      // Handle the case where preferences are not set (maybe show the survey screen)
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const SurveyScreen()),
+      );
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
 
   @override
   Widget build(BuildContext context) {
