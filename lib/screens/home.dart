@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartfood/auth_service.dart';
 import 'package:smartfood/food_scraper.dart';
-import 'package:smartfood/screens/signin.dart';  // Import SignIn screen
+import 'package:smartfood/screens/signin.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -20,11 +20,10 @@ class _HomeState extends State<Home> {
   final TextEditingController _cityController = TextEditingController();
 
   User? _user;
-  List<Map<String, String>> _lunchMenus = [];
+  List<Map<String, String>> _restaurantMenuList = [];
   String _scraperMessage = "";
   String _aiResponse = "";
 
-  // Stored preferences
   String _dietaryRestrictions = "";
   String _allergies = "";
 
@@ -57,18 +56,18 @@ class _HomeState extends State<Home> {
       _scraperMessage = "Fetching menus...";
     });
 
-    List<Map<String, String>> menus = await _foodScraper.fetchLunchMenus(_cityController.text);
+    List<Map<String, String>> restaurantMenuList = await _foodScraper.fetchLunchMenus(_cityController.text);
 
     setState(() {
-      _lunchMenus = menus;
-      _scraperMessage = menus.isNotEmpty ? "Menus fetched successfully!" : "No menus found.";
+      _restaurantMenuList = restaurantMenuList;
+      _scraperMessage = restaurantMenuList.isNotEmpty ? "Menus fetched successfully!" : "No menus found.";
     });
 
     _filterMenusWithAI();
   }
 
   Future<void> _filterMenusWithAI() async {
-    if (_lunchMenus.isEmpty) {
+    if (_restaurantMenuList.isEmpty) {
       setState(() {
         _aiResponse = "No menus available to analyze.";
       });
@@ -84,7 +83,7 @@ class _HomeState extends State<Home> {
       _aiResponse = "Analyzing menus...";
     });
 
-    String response = await _foodScraper.askLLMAboutDietaryOptions(_lunchMenus, question);
+    String response = await _foodScraper.askLLMAboutDietaryOptions(_restaurantMenuList, question);
 
     setState(() {
       _aiResponse = response;
@@ -97,7 +96,6 @@ class _HomeState extends State<Home> {
       _user = null;
     });
 
-    // Navigate to SignIn screen after sign out
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => SignInScreen()),
@@ -130,7 +128,6 @@ class _HomeState extends State<Home> {
               ),
             ),
 
-            // Display user info if logged in
             if (_user != null) ...[
               CircleAvatar(radius: 40, backgroundImage: NetworkImage(_user?.photoURL ?? "")),
               SizedBox(height: 10),
@@ -157,7 +154,7 @@ class _HomeState extends State<Home> {
                   SizedBox(height: 10),
                   Text(_scraperMessage, style: TextStyle(fontSize: 16, color: Colors.blue)),
 
-                  if (_lunchMenus.isNotEmpty) ...[
+                  if (_restaurantMenuList.isNotEmpty) ...[
                     SizedBox(height: 10),
                     if (_aiResponse.isNotEmpty)
                       Padding(

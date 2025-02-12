@@ -1,9 +1,9 @@
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as html;
-import 'openai_service.dart';  // Import OpenAI service
+import 'openai_service.dart';
 
 class FoodScraper {
-  final OpenAIService _openAIService = OpenAIService();  // LLM instance
+  final OpenAIService _openAIService = OpenAIService();
 
   Future<List<Map<String, String>>> fetchLunchMenus(String city) async {
     String sanitizedCity = city.replaceAll(RegExp(r'[äÄ]'), 'a').replaceAll(RegExp(r'[öÖ]'), 'o').toLowerCase();
@@ -14,7 +14,7 @@ class FoodScraper {
 
       if (response.statusCode == 200) {
         var document = html.parse(response.body);
-        List<Map<String, String>> menus = [];
+        List<Map<String, String>> restaurantMenuList = [];
 
         var restaurantElements = document.querySelectorAll('.menu.item');
 
@@ -41,15 +41,15 @@ class FoodScraper {
             menu += "• $dish $dietInfo - $price\n";
           }
 
-          menus.add({
+          restaurantMenuList.add({
             'name': name,
             'menu': menu.isNotEmpty ? menu : "No menu available",
             'link': link,
             'opening_hours': openingHours,
           });
         }
-
-        return menus;
+        print(restaurantMenuList);
+        return restaurantMenuList;
       } else {
         throw Exception("Failed to load data from lounaat.info");
       }
@@ -78,8 +78,8 @@ class FoodScraper {
   }
 
   /// Queries the LLM with dietary-related questions
-Future<String> askLLMAboutDietaryOptions(List<Map<String, String>> menus, String dietaryQuestionAnswers) async {
-  if (menus.isEmpty) return "No menus available to analyze.";
+  Future<String> askLLMAboutDietaryOptions(List<Map<String, String>> menus, String dietaryQuestionAnswers) async {
+    if (menus.isEmpty) return "No menus available to analyze.";
 
     String formattedMenus = formatMenusForLLM(menus, "your location");
 
@@ -109,5 +109,4 @@ Future<String> askLLMAboutDietaryOptions(List<Map<String, String>> menus, String
 
     return await _openAIService.getResponse(fullPrompt);
   }
-
 }
