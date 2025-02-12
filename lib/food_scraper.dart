@@ -6,7 +6,7 @@ class FoodScraper {
   final OpenAIService _openAIService = OpenAIService();  // LLM instance
 
   Future<List<Map<String, String>>> fetchLunchMenus(String city) async {
-    String sanitizedCity = city.replaceAll(RegExp(r'[äÄ]'), 'a').replaceAll(RegExp(r'[öÖ]'), 'o');
+    String sanitizedCity = city.replaceAll(RegExp(r'[äÄ]'), 'a').replaceAll(RegExp(r'[öÖ]'), 'o').toLowerCase();
     String url = "https://www.lounaat.info/$sanitizedCity";
 
     try {
