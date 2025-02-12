@@ -79,21 +79,36 @@ class FoodScraper {
   }
 
   /// Queries the LLM with dietary-related questions
-  Future<String> askLLMAboutDietaryOptions(List<Map<String, String>> menus, String question) async {
-    if (menus.isEmpty) return "No menus available to analyze.";
+Future<String> askLLMAboutDietaryOptions(List<Map<String, String>> menus, String dietaryQuestionAnswers) async {
+  if (menus.isEmpty) return "No menus available to analyze.";
 
     String formattedMenus = formatMenusForLLM(menus, "your location");
-    
+
     String fullPrompt = """
-    I have the following lunch menus available:
+    I have the following lunch menus available in your area:
 
     $formattedMenus
 
-    Question: $question
+    Question: $dietaryQuestionAnswers
 
-    Based on this, can you provide a dietary recommendation?
+    Please provide dietary recommendations based on the following options:
+    - List the recommended dishes that align with the given dietary preferences.
+    - For each recommendation, include:
+      - The restaurant name
+      - The dish name
+      - Any dietary information (e.g., gluten-free, vegetarian, etc.)
+      - A brief note on why it's a good option for the dietary restrictions
+
+    Your response should be in the following format:
+
+    1. **Restaurant Name**: Recommended Dish (Dietary Info) - Reasoning
+    2. **Restaurant Name**: Recommended Dish (Dietary Info) - Reasoning
+    3. (continue with more options)
+
+    Please ensure the response is clear and easy to follow, with a focus on matching the dietary preferences and allergies mentioned.
     """;
 
     return await _openAIService.getResponse(fullPrompt);
   }
+
 }
