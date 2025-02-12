@@ -67,10 +67,10 @@ class FoodScraper {
     prompt.writeln("Here are today's lunch menus in $city:\n");
 
     for (var restaurant in menus) {
-      prompt.writeln("🍽 **${restaurant['name']}**");
-      prompt.writeln("🕒 *Opening Hours:* ${restaurant['opening_hours']}");
-      prompt.writeln("📜 *Menu:*\n${restaurant['menu']}");
-      prompt.writeln("🔗 [More Info](${restaurant['link']})\n");
+      prompt.writeln("**${restaurant['name']}**");
+      prompt.writeln("*Opening Hours:* ${restaurant['opening_hours']}");
+      prompt.writeln("*Menu:*\n${restaurant['menu']}");
+      prompt.writeln("[More Info](${restaurant['link']})\n");
     }
 
     prompt.writeln("\nBased on this, what would you recommend?");
