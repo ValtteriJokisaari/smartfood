@@ -31,8 +31,8 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    _checkUserSignIn(); // Check if the user is already signed in
-    _loadPreferences(); // Load stored preferences on startup
+    _checkUserSignIn();
+    _loadPreferences();
   }
 
   Future<void> _loadPreferences() async {
@@ -100,7 +100,7 @@ class _HomeState extends State<Home> {
     // Navigate to SignIn screen after sign out
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => SignInScreen()),  // Replace with your sign-in screen
+      MaterialPageRoute(builder: (context) => SignInScreen()),
     );
   }
 
