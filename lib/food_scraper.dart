@@ -5,10 +5,9 @@ import 'openai_service.dart';  // Import OpenAI service
 class FoodScraper {
   final OpenAIService _openAIService = OpenAIService();  // LLM instance
 
-  /// Fetches lunch menus for a given city from lounaat.info
   Future<List<Map<String, String>>> fetchLunchMenus(String city) async {
-    String formattedCity = city.toLowerCase();
-    String url = "https://www.lounaat.info/$formattedCity";
+    String sanitizedCity = city.replaceAll(RegExp(r'[äÄ]'), 'a').replaceAll(RegExp(r'[öÖ]'), 'o');
+    String url = "https://www.lounaat.info/$sanitizedCity";
 
     try {
       final response = await http.get(Uri.parse(url));
