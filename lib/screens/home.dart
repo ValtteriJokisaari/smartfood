@@ -35,7 +35,6 @@ class _HomeState extends State<Home> {
     _loadPreferences(); // Load stored preferences on startup
   }
 
-  // Load preferences from SharedPreferences
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -44,7 +43,6 @@ class _HomeState extends State<Home> {
     });
   }
 
-  // Check if user is signed in
   Future<void> _checkUserSignIn() async {
     User? user = _auth.currentUser;
     if (user != null) {
@@ -54,7 +52,6 @@ class _HomeState extends State<Home> {
     }
   }
 
-  // Fetches lunch menus for the entered city
   Future<void> _fetchMenus() async {
     setState(() {
       _scraperMessage = "Fetching menus...";
@@ -67,11 +64,9 @@ class _HomeState extends State<Home> {
       _scraperMessage = menus.isNotEmpty ? "Menus fetched successfully!" : "No menus found.";
     });
 
-    // Automatically filter the menus with stored preferences (no need for manual input)
     _filterMenusWithAI();
   }
 
-  // Queries AI for dietary-friendly lunch options using stored preferences
   Future<void> _filterMenusWithAI() async {
     if (_lunchMenus.isEmpty) {
       setState(() {
