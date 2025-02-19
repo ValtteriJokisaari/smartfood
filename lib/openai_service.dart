@@ -20,7 +20,7 @@ class OpenAIService {
           {"role": "system", "content": "You are a helpful assistant."},
           {"role": "user", "content": prompt}
         ],
-        "max_tokens": 100,
+        "max_tokens": 3000,
       }),
     );
 
