@@ -5,6 +5,7 @@ import 'package:smartfood/auth_service.dart';
 import 'package:smartfood/food_scraper.dart';
 import 'package:smartfood/screens/signin.dart';
 import 'package:smartfood/screens/settings_screen.dart'; // Import the settings screen
+import 'package:smartfood/screens/survey.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -162,7 +163,19 @@ class _HomeState extends State<Home> {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  // City input field
+                  // Button to open SurveyScreen and change preferences
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const SurveyScreen()),
+                      );
+                    },
+                    child: Text("Change Preferences"),
+                  ),
+                  SizedBox(height: 10),
+                  // Text field to enter city
                   TextField(
                     controller: _cityController,
                     decoration: const InputDecoration(
