@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartfood/auth_service.dart';
 import 'package:smartfood/food_scraper.dart';
 import 'package:smartfood/screens/signin.dart';
+import 'package:smartfood/screens/settings_screen.dart'; // Import the settings screen
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -56,11 +57,14 @@ class _HomeState extends State<Home> {
       _scraperMessage = "Fetching menus...";
     });
 
-    List<Map<String, String>> restaurantMenuList = await _foodScraper.fetchLunchMenus(_cityController.text);
+    List<Map<String, String>> restaurantMenuList =
+    await _foodScraper.fetchLunchMenus(_cityController.text);
 
     setState(() {
       _restaurantMenuList = restaurantMenuList;
-      _scraperMessage = restaurantMenuList.isNotEmpty ? "Menus fetched successfully!" : "No menus found.";
+      _scraperMessage = restaurantMenuList.isNotEmpty
+          ? "Menus fetched successfully!"
+          : "No menus found.";
     });
 
     _filterMenusWithAI();
@@ -83,7 +87,8 @@ class _HomeState extends State<Home> {
       _aiResponse = "Analyzing menus...";
     });
 
-    String response = await _foodScraper.askLLMAboutDietaryOptions(_restaurantMenuList, question);
+    String response =
+    await _foodScraper.askLLMAboutDietaryOptions(_restaurantMenuList, question);
 
     setState(() {
       _aiResponse = response;
@@ -106,62 +111,83 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("SmartFood"),
+        title: const Text("SmartFood"),
         centerTitle: true,
         backgroundColor: Colors.green[700],
         actions: [
-          if (_user != null)
+          if (_user != null) ...[
+            // Settings icon in the top-right corner
             IconButton(
-              icon: Icon(Icons.logout),
+              icon: const Icon(Icons.settings),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                );
+              },
+            ),
+            // Logout icon
+            IconButton(
+              icon: const Icon(Icons.logout),
               onPressed: _handleSignOut,
             ),
+          ],
         ],
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
+            // Welcome text
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Text(
                 "Welcome to SmartFood",
-                style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold, color: Colors.grey[600]),
+                style: TextStyle(
+                  fontSize: 20.0,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[600],
+                ),
               ),
             ),
-
             if (_user != null) ...[
-              CircleAvatar(radius: 40, backgroundImage: NetworkImage(_user?.photoURL ?? "")),
-              SizedBox(height: 10),
+              CircleAvatar(
+                radius: 40,
+                backgroundImage: NetworkImage(_user?.photoURL ?? ""),
+              ),
+              const SizedBox(height: 10),
               Text("Hello, ${_user?.displayName ?? "User"}!"),
               Text(_user?.email ?? ""),
             ],
-
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
+                  // City input field
                   TextField(
                     controller: _cityController,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: "Enter City",
                       border: OutlineInputBorder(),
                     ),
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: _fetchMenus,
-                    child: Text("Fetch Lunch Menus"),
+                    child: const Text("Fetch Lunch Menus"),
                   ),
-                  SizedBox(height: 10),
-                  Text(_scraperMessage, style: TextStyle(fontSize: 16, color: Colors.blue)),
-
+                  const SizedBox(height: 10),
+                  Text(
+                    _scraperMessage,
+                    style: const TextStyle(fontSize: 16, color: Colors.blue),
+                  ),
                   if (_restaurantMenuList.isNotEmpty) ...[
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     if (_aiResponse.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Text(
                           _aiResponse,
-                          style: TextStyle(fontSize: 16, color: Colors.black),
+                          style: const TextStyle(fontSize: 16, color: Colors.red),
                         ),
                       ),
                   ],
