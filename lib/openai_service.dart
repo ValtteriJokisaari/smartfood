@@ -11,22 +11,22 @@ class OpenAIService {
     final response = await http.post(
       url,
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "application/json; charset=UTF-8",
         "Authorization": "Bearer $_apiKey",
       },
       body: jsonEncode({
-        "model": "gpt-3.5-turbo",  // Adjust based on your subscription
+        "model": "gpt-3.5-turbo",
         "messages": [
           {"role": "system", "content": "You are a helpful assistant."},
           {"role": "user", "content": prompt}
         ],
-        "max_tokens": 100,
+        "max_tokens": 3000,
       }),
     );
 
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data["choices"][0]["message"]["content"].trim();
+      final decodedResponse = jsonDecode(utf8.decode(response.bodyBytes));
+      return decodedResponse["choices"][0]["message"]["content"].trim();
     } else {
       return "Error: ${response.reasonPhrase}";
     }

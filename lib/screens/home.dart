@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:smartfood/auth_service.dart';
-import 'package:smartfood/openai_service.dart';  // Ensure OpenAI service is imported
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:smartfood/screens/survey.dart';
+import 'package:smartfood/auth_service.dart';
+import 'package:smartfood/food_scraper.dart';
+import 'package:smartfood/screens/signin.dart';
+import 'package:smartfood/screens/settings_screen.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -14,81 +16,135 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   final AuthService _authService = AuthService();
-  final OpenAIService _openAIService = OpenAIService();  // OpenAI instance
-  final TextEditingController _promptController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FoodScraper _foodScraper = FoodScraper();
 
-  String _aiResponse = ""; // Store AI response
-  User? _user = FirebaseAuth.instance.currentUser; // Get current user
+  final TextEditingController _cityController = TextEditingController();
 
-  String _dietaryRestrictions = "None";
-  String _goal = "General health";
-  String _cuisine = "Any";
-  int _mealsPerDay = 3;
+  User? _user;
+  List<Map<String, String>> _restaurantMenuList = [];
+  String _scraperMessage = "";
+  String _aiResponse = "";
 
-  Future<void> _handleSignOut() async {
-    await _authService.signOut();
-    Navigator.pushReplacementNamed(context, "/");
-  }
-
-  // Function to handle sending prompt to OpenAI
-  Future<void> _sendPrompt() async {
-    if (_promptController.text.isNotEmpty) {
-      setState(() {
-        _aiResponse = "Thinking...";
-      });
-
-      String response = await _openAIService.getResponse(_promptController.text);
-
-      setState(() {
-        _aiResponse = response;
-      });
-    }
-  }
-
-  Future<void> _loadPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (prefs.getBool('hasPreferences') ?? false) {
-      setState(() {
-        _dietaryRestrictions = prefs.getString('dietaryRestrictions') ?? "None";
-        _goal = prefs.getString('goal') ?? "General health";
-        _cuisine = prefs.getString('cuisine') ?? "Any";
-        _mealsPerDay = prefs.getInt('mealsPerDay') ?? 3;
-      });
-
-      print("Loaded Preferences: $_dietaryRestrictions, $_goal, $_cuisine, $_mealsPerDay");
-    } else {
-      // Handle the case where preferences are not set (maybe show the survey screen)
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const SurveyScreen()),
-      );
-    }
-  }
+  String _dietaryRestrictions = "";
+  String _allergies = "";
 
   @override
   void initState() {
     super.initState();
+    _checkUserSignIn();
     _loadPreferences();
   }
 
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _dietaryRestrictions = prefs.getString('dietaryRestrictions') ?? "None";
+      _allergies = prefs.getString('allergies') ?? "None";
+    });
+  }
+
+  Future<void> _checkUserSignIn() async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      setState(() {
+        _user = user;
+      });
+    }
+  }
+
+  Future<void> _fetchMenus() async {
+    setState(() {
+      _scraperMessage = "Fetching menus...";
+    });
+
+    List<Map<String, String>> restaurantMenuList =
+        await _foodScraper.fetchLunchMenus(_cityController.text);
+
+    setState(() {
+      _restaurantMenuList = restaurantMenuList;
+      _scraperMessage = restaurantMenuList.isNotEmpty ? "Menus fetched successfully!" : "No menus found.";
+    });
+
+    _filterMenusWithAI();
+  }
+
+  Future<void> _filterMenusWithAI() async {
+    if (_restaurantMenuList.isEmpty) {
+      setState(() {
+        _aiResponse = "No menus available to analyze.";
+      });
+      return;
+    }
+
+    setState(() {
+      _aiResponse = "Analyzing menus...";
+    });
+
+    Map<String, String> userPreferences = {
+      "dietaryRestrictions": _dietaryRestrictions,
+      "allergies": _allergies,
+    };
+
+    String response = await _foodScraper.askLLMAboutDietaryOptions(
+        _restaurantMenuList, userPreferences, _cityController.text);
+
+    setState(() {
+      _aiResponse = response;
+    });
+  }
+
+  Future<void> _handleSignOut() async {
+    await _authService.signOut();
+    setState(() {
+      _user = null;
+    });
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => SignInScreen()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("SmartFood"),
+        centerTitle: true,
         backgroundColor: Colors.green[700],
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _handleSignOut,
-          ),
+          if (_user != null) ...[
+            IconButton(
+              icon: const Icon(Icons.settings),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: _handleSignOut,
+            ),
+          ],
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                "Welcome to SmartFood",
+                style: TextStyle(
+                  fontSize: 20.0,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ),
             if (_user != null) ...[
               CircleAvatar(
                 radius: 40,
@@ -98,36 +154,39 @@ class _HomeState extends State<Home> {
               Text("Hello, ${_user?.displayName ?? "User"}!"),
               Text(_user?.email ?? ""),
             ],
-
-            const SizedBox(height: 20),
-
-            // OpenAI Prompt Section
-            TextField(
-              controller: _promptController,
-              decoration: const InputDecoration(
-                labelText: "Ask AI",
-                border: OutlineInputBorder(),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  SizedBox(height: 10),
+                  TextField(
+                    controller: _cityController,
+                    decoration: const InputDecoration(
+                      labelText: "Enter City",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: _fetchMenus,
+                    child: const Text("Fetch Lunch Menus"),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    _scraperMessage,
+                    style: const TextStyle(fontSize: 16, color: Colors.blue),
+                  ),
+                  if (_restaurantMenuList.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    if (_aiResponse.isNotEmpty)
+                      MarkdownBody(
+                        data: _aiResponse,
+                        styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
+                      ),
+                  ],
+                ],
               ),
             ),
-
-            const SizedBox(height: 10),
-
-            ElevatedButton(
-              onPressed: _sendPrompt,
-              child: const Text("Ask OpenAI"),
-            ),
-
-            const SizedBox(height: 20),
-
-            if (_aiResponse.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(_aiResponse, style: const TextStyle(fontSize: 16)),
-              ),
           ],
         ),
       ),
