@@ -116,7 +116,7 @@ class SignInScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 40),
                 const Text(
-                  "By signing in, you agree to our Terms & Conditions",
+                  "By signing in, you agree to our Terms & Conditions (to be added)",
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.black45,

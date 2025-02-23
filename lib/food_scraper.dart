@@ -30,7 +30,6 @@ class FoodScraper {
             String price = item.querySelector('.price')?.text.trim() ?? "";
             String dish = item.querySelector('.dish')?.text.trim() ?? "";
 
-            // Collect dietary information
             List<String> dietTags = [];
             var dietElements = item.querySelectorAll('.diet');
             for (var diet in dietElements) {
@@ -60,40 +59,32 @@ class FoodScraper {
   }
 
   /// Formats scraped data into an LLM-friendly prompt
-  String formatMenusForLLM(List<Map<String, String>> menus, String city) {
-    if (menus.isEmpty) return "No lunch menus found for $city today.";
-
+  String formatMenusForLLM(List<Map<String, String>> menus) {
     StringBuffer prompt = StringBuffer();
-    prompt.writeln("Here are today's lunch menus in $city:\n");
-
     for (var restaurant in menus) {
       prompt.writeln("**${restaurant['name']}**");
       prompt.writeln("*Opening Hours:* ${restaurant['opening_hours']}");
       prompt.writeln("*Menu:*\n${restaurant['menu']}");
       prompt.writeln("[More Info](${restaurant['link']})\n");
     }
-
-    prompt.writeln("\nBased on this, what would you recommend?");
     return prompt.toString();
   }
 
-  /// Queries the LLM with dietary-related questions using a dictionary of user preferences.
   Future<String> askLLMAboutDietaryOptions(
-      List<Map<String, String>> menus, Map<String, String> userPreferences) async {
+      List<Map<String, String>> menus, Map<String, String> userPreferences, String city) async {
     if (menus.isEmpty) return "No menus available to analyze.";
 
-    // Extract preferences from the dictionary.
     String dietaryRestrictions = userPreferences["dietaryRestrictions"] ?? "None";
     String allergies = userPreferences["allergies"] ?? "None";
 
-    String formattedMenus = formatMenusForLLM(menus, "your location");
+    String formattedMenus = formatMenusForLLM(menus);
 
     String fullPrompt = """
-    I have the following lunch menus available in your area:
+    The following lunch menus are available in $city:
     
     $formattedMenus
     
-    Which options are suitable for someone who follows a $dietaryRestrictions diet and is allergic to $allergies?
+    Which options are suitable for me who follows a $dietaryRestrictions diet and is allergic to $allergies?
     f $dietaryRestrictions is null then provide general food that follow other user's preferences
     f $allergies is null then provide general food that follow other user's preferences
     Provide the filtered options based on these preferences. Also, mention the user's preferences.
@@ -106,11 +97,9 @@ class FoodScraper {
       - Any dietary information (e.g., gluten-free, vegetarian, etc.), if there is no allergies, do not mention them
       - A brief note on why it's a good option for the dietary restrictions
     
-    Your response should be in the following format:
+    Your response should list restaurants in the following format:
     
-    1. **Restaurant Name**: Recommended Dish (Dietary Info) - Reasoning
-    2. **Restaurant Name**: Recommended Dish (Dietary Info) - Reasoning
-    3. (continue with more options)
+    **Restaurant Name**: Recommended Dish (Dietary Info) - Reasoning
     
     Please ensure the response is clear and easy to follow, with a focus on matching the dietary preferences and allergies mentioned.
     """;

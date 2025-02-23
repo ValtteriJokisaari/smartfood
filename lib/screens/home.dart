@@ -59,12 +59,11 @@ class _HomeState extends State<Home> {
     });
 
     List<Map<String, String>> restaurantMenuList =
-    await _foodScraper.fetchLunchMenus(_cityController.text);
+        await _foodScraper.fetchLunchMenus(_cityController.text);
 
     setState(() {
       _restaurantMenuList = restaurantMenuList;
-      _scraperMessage =
-      restaurantMenuList.isNotEmpty ? "Menus fetched successfully!" : "No menus found.";
+      _scraperMessage = restaurantMenuList.isNotEmpty ? "Menus fetched successfully!" : "No menus found.";
     });
 
     _filterMenusWithAI();
@@ -82,14 +81,13 @@ class _HomeState extends State<Home> {
       _aiResponse = "Analyzing menus...";
     });
 
-    // Create a dictionary (Map) containing user preferences.
     Map<String, String> userPreferences = {
       "dietaryRestrictions": _dietaryRestrictions,
       "allergies": _allergies,
     };
 
-    // Pass the dictionary to the food scraper method.
-    String response = await _foodScraper.askLLMAboutDietaryOptions(_restaurantMenuList, userPreferences);
+    String response = await _foodScraper.askLLMAboutDietaryOptions(
+        _restaurantMenuList, userPreferences, _cityController.text);
 
     setState(() {
       _aiResponse = response;
@@ -117,7 +115,6 @@ class _HomeState extends State<Home> {
         backgroundColor: Colors.green[700],
         actions: [
           if (_user != null) ...[
-            // Settings icon in the top-right corner
             IconButton(
               icon: const Icon(Icons.settings),
               onPressed: () {
@@ -127,7 +124,6 @@ class _HomeState extends State<Home> {
                 );
               },
             ),
-            // Logout icon
             IconButton(
               icon: const Icon(Icons.logout),
               onPressed: _handleSignOut,
@@ -138,7 +134,6 @@ class _HomeState extends State<Home> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Welcome text
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Text(
@@ -164,7 +159,6 @@ class _HomeState extends State<Home> {
               child: Column(
                 children: [
                   SizedBox(height: 10),
-                  // Text field to enter city
                   TextField(
                     controller: _cityController,
                     decoration: const InputDecoration(

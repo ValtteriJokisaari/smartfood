@@ -6,7 +6,6 @@ import 'package:smartfood/screens/home.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
 class AgeScreen extends StatefulWidget {
-  // Optional parameters are kept for backwards compatibility.
   final String? name;
   final String? email;
 
@@ -30,10 +29,7 @@ class _AgeScreenState extends State<AgeScreen> {
     _initUserInfo();
   }
 
-  /// Always fetch the name and email from FirebaseAuth (Google account)
-  /// and load the saved age from SharedPreferences.
   Future<void> _initUserInfo() async {
-    // Get the current user from FirebaseAuth.
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       setState(() {
@@ -42,7 +38,6 @@ class _AgeScreenState extends State<AgeScreen> {
       });
     }
 
-    // Load the saved age from SharedPreferences.
     final prefs = await SharedPreferences.getInstance();
     int? storedAge = prefs.getInt('age');
     if (storedAge != null) {
@@ -58,7 +53,6 @@ class _AgeScreenState extends State<AgeScreen> {
       await prefs.setInt('age', _selectedAge!);
       await prefs.setBool('hasAccountInfo', true);
 
-      // After saving age, check if dietary preferences have been set.
       bool hasPreferences = prefs.getBool('hasPreferences') ?? false;
       if (!hasPreferences) {
         Navigator.pushReplacement(
@@ -87,7 +81,6 @@ class _AgeScreenState extends State<AgeScreen> {
           key: _formKey,
           child: Column(
             children: [
-              // Display the user's name from FirebaseAuth.
               Row(
                 children: [
                   const Icon(Icons.person),
@@ -96,7 +89,6 @@ class _AgeScreenState extends State<AgeScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              // Display the user's email from FirebaseAuth.
               Row(
                 children: [
                   const Icon(Icons.email),
@@ -105,7 +97,6 @@ class _AgeScreenState extends State<AgeScreen> {
                 ],
               ),
               const SizedBox(height: 20),
-              // Age Drop-down Field using DropdownButtonFormField2.
               DropdownButtonFormField2<int>(
                 decoration: InputDecoration(
                   isDense: true,
