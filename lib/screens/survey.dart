@@ -13,7 +13,6 @@ class SurveyScreen extends StatefulWidget {
 class _SurveyScreenState extends State<SurveyScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Options for dietary restrictions with an "Other" option added.
   final List<String> _dietaryRestrictionsOptions = [
     "Vegetarian",
     "Vegan",
@@ -32,11 +31,9 @@ class _SurveyScreenState extends State<SurveyScreen> {
     "Increase Energy",
   ];
 
-  // Selected values for dietary restrictions and primary goal.
   List<String> _selectedDietaryRestrictions = [];
   String? _selectedPrimaryGoal;
 
-  // Controllers for text fields.
   final TextEditingController _cuisineController = TextEditingController();
   final TextEditingController _allergiesController = TextEditingController();
   final TextEditingController _mealsPerDayController = TextEditingController();
@@ -49,11 +46,9 @@ class _SurveyScreenState extends State<SurveyScreen> {
     _loadPreferences();
   }
 
-  // Load saved preferences from SharedPreferences and pre-populate the fields.
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Load and process dietary restrictions.
     String? dietaryRestrictions = prefs.getString('dietaryRestrictions');
     if (dietaryRestrictions != null && dietaryRestrictions.isNotEmpty) {
       List<String> restrictions = dietaryRestrictions
@@ -63,7 +58,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
       setState(() {
         _selectedDietaryRestrictions = restrictions;
       });
-      // If any restriction starts with "Other:", extract its value.
+
       for (String restriction in restrictions) {
         if (restriction.startsWith("Other:")) {
           String otherValue = restriction.substring(6).trim();
@@ -72,21 +67,17 @@ class _SurveyScreenState extends State<SurveyScreen> {
       }
     }
 
-    // Load primary goal.
     String? goal = prefs.getString('goal');
     setState(() {
       _selectedPrimaryGoal = goal;
     });
 
-    // Load cuisine.
     String? cuisine = prefs.getString('cuisine');
     _cuisineController.text = cuisine ?? "";
 
-    // Load allergies.
     String? allergies = prefs.getString('allergies');
     _allergiesController.text = allergies ?? "";
 
-    // Load meals per day.
     int? mealsPerDay = prefs.getInt('mealsPerDay');
     _mealsPerDayController.text = mealsPerDay != null ? mealsPerDay.toString() : "";
   }
@@ -94,14 +85,11 @@ class _SurveyScreenState extends State<SurveyScreen> {
   Future<void> _savePreferences() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Retrieve current values from controllers.
     String cuisine = _cuisineController.text;
     String allergies = _allergiesController.text;
     int? mealsPerDay = int.tryParse(_mealsPerDayController.text);
     String otherDietary = _otherDietaryRestrictionController.text;
 
-    // Process dietary restrictions:
-    // If "Other" is selected and custom text is provided, replace it with "Other: <custom text>".
     String finalDietaryRestrictions;
     if (_selectedDietaryRestrictions.contains("Other") &&
         otherDietary.trim().isNotEmpty) {
@@ -147,7 +135,6 @@ class _SurveyScreenState extends State<SurveyScreen> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                // Multi-select for Dietary Restrictions (optional).
                 MultiSelectDialogField(
                   items: _dietaryRestrictionsOptions
                       .map((e) => MultiSelectItem<String>(e, e))

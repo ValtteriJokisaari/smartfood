@@ -6,11 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
-  // This function attempts to retrieve the user's name and email.
-  // In a real-world scenario, you may want to retrieve this from your auth service.
   Future<Map<String, String>> _getUserInfo() async {
     final prefs = await SharedPreferences.getInstance();
-    // These keys should be set during your sign-in process.
     String name = prefs.getString('userName') ?? "User Name";
     String email = prefs.getString('userEmail') ?? "user@example.com";
     return {"name": name, "email": email};
@@ -49,14 +46,12 @@ class SettingsScreen extends StatelessWidget {
             subtitle: const Text("Update your dietary preferences"),
             trailing: const Icon(Icons.arrow_forward_ios),
             onTap: () {
-              // Navigate to the Survey (preferences) screen.
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const SurveyScreen()),
               );
             },
           ),
-          // Additional settings options can be added here.
         ],
       ),
     );
