@@ -32,29 +32,82 @@ class _SurveyScreenState extends State<SurveyScreen> {
     "Increase Energy",
   ];
 
-  // Selected values
-  List<String> _selectedDietaryRestrictions = []; // Supports multiple choices
+  // Selected values for dietary restrictions and primary goal.
+  List<String> _selectedDietaryRestrictions = [];
   String? _selectedPrimaryGoal;
 
-  // Variable to store user input for the "Other" dietary restriction
-  String _otherDietaryRestriction = "";
+  // Controllers for text fields.
+  final TextEditingController _cuisineController = TextEditingController();
+  final TextEditingController _allergiesController = TextEditingController();
+  final TextEditingController _mealsPerDayController = TextEditingController();
+  final TextEditingController _otherDietaryRestrictionController =
+  TextEditingController();
 
-  // Other free-text fields
-  String _cuisine = "";
-  String _allergies = "";
-  int? _mealsPerDay; // Initially null
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  // Load saved preferences from SharedPreferences and pre-populate the fields.
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Load and process dietary restrictions.
+    String? dietaryRestrictions = prefs.getString('dietaryRestrictions');
+    if (dietaryRestrictions != null && dietaryRestrictions.isNotEmpty) {
+      List<String> restrictions = dietaryRestrictions
+          .split(',')
+          .map((e) => e.trim())
+          .toList();
+      setState(() {
+        _selectedDietaryRestrictions = restrictions;
+      });
+      // If any restriction starts with "Other:", extract its value.
+      for (String restriction in restrictions) {
+        if (restriction.startsWith("Other:")) {
+          String otherValue = restriction.substring(6).trim();
+          _otherDietaryRestrictionController.text = otherValue;
+        }
+      }
+    }
+
+    // Load primary goal.
+    String? goal = prefs.getString('goal');
+    setState(() {
+      _selectedPrimaryGoal = goal;
+    });
+
+    // Load cuisine.
+    String? cuisine = prefs.getString('cuisine');
+    _cuisineController.text = cuisine ?? "";
+
+    // Load allergies.
+    String? allergies = prefs.getString('allergies');
+    _allergiesController.text = allergies ?? "";
+
+    // Load meals per day.
+    int? mealsPerDay = prefs.getInt('mealsPerDay');
+    _mealsPerDayController.text = mealsPerDay != null ? mealsPerDay.toString() : "";
+  }
 
   Future<void> _savePreferences() async {
     final prefs = await SharedPreferences.getInstance();
 
+    // Retrieve current values from controllers.
+    String cuisine = _cuisineController.text;
+    String allergies = _allergiesController.text;
+    int? mealsPerDay = int.tryParse(_mealsPerDayController.text);
+    String otherDietary = _otherDietaryRestrictionController.text;
+
     // Process dietary restrictions:
-    // If "Other" is selected and input is provided, replace it with the custom text.
+    // If "Other" is selected and custom text is provided, replace it with "Other: <custom text>".
     String finalDietaryRestrictions;
     if (_selectedDietaryRestrictions.contains("Other") &&
-        _otherDietaryRestriction.trim().isNotEmpty) {
+        otherDietary.trim().isNotEmpty) {
       List<String> restrictions = List.from(_selectedDietaryRestrictions);
       int otherIndex = restrictions.indexOf("Other");
-      restrictions[otherIndex] = "Other: $_otherDietaryRestriction";
+      restrictions[otherIndex] = "Other: $otherDietary";
       finalDietaryRestrictions = restrictions.join(', ');
     } else {
       finalDietaryRestrictions = _selectedDietaryRestrictions.join(', ');
@@ -62,16 +115,25 @@ class _SurveyScreenState extends State<SurveyScreen> {
 
     await prefs.setString('dietaryRestrictions', finalDietaryRestrictions);
     await prefs.setString('goal', _selectedPrimaryGoal ?? "");
-    await prefs.setString('cuisine', _cuisine);
-    await prefs.setString('allergies', _allergies);
-    await prefs.setInt('mealsPerDay', _mealsPerDay ?? 0);
+    await prefs.setString('cuisine', cuisine);
+    await prefs.setString('allergies', allergies);
+    await prefs.setInt('mealsPerDay', mealsPerDay ?? 0);
     await prefs.setBool('hasPreferences', true);
 
-    // Navigate to Home after saving
+    // Navigate to Home after saving.
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const Home()),
     );
+  }
+
+  @override
+  void dispose() {
+    _cuisineController.dispose();
+    _allergiesController.dispose();
+    _mealsPerDayController.dispose();
+    _otherDietaryRestrictionController.dispose();
+    super.dispose();
   }
 
   @override
@@ -85,7 +147,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                // Multi-select for Dietary Restrictions
+                // Multi-select for Dietary Restrictions (optional).
                 MultiSelectDialogField(
                   items: _dietaryRestrictionsOptions
                       .map((e) => MultiSelectItem<String>(e, e))
@@ -99,27 +161,17 @@ class _SurveyScreenState extends State<SurveyScreen> {
                       _selectedDietaryRestrictions = selected.cast<String>();
                     });
                   },
-                  validator: (selected) {
-                    if (selected == null || selected.isEmpty) {
-                      return "Please select at least one option";
-                    }
-                    return null;
-                  },
                 ),
                 const SizedBox(height: 16),
 
                 // If "Other" is selected, show an additional text field.
                 if (_selectedDietaryRestrictions.contains("Other"))
                   TextFormField(
+                    controller: _otherDietaryRestrictionController,
                     decoration: const InputDecoration(
                       labelText: "Please specify your dietary restriction",
                       border: OutlineInputBorder(),
                     ),
-                    onChanged: (value) {
-                      setState(() {
-                        _otherDietaryRestriction = value;
-                      });
-                    },
                     validator: (value) {
                       if (_selectedDietaryRestrictions.contains("Other") &&
                           (value == null || value.isEmpty)) {
@@ -131,7 +183,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
                 if (_selectedDietaryRestrictions.contains("Other"))
                   const SizedBox(height: 16),
 
-                // Primary Goal dropdown (single choice)
+                // Primary Goal dropdown (single choice).
                 DropdownButtonFormField<String>(
                   decoration: const InputDecoration(
                     labelText: "Primary Goal",
@@ -158,48 +210,34 @@ class _SurveyScreenState extends State<SurveyScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Preferred Cuisine (free text)
+                // Preferred Cuisine (free text).
                 TextFormField(
+                  controller: _cuisineController,
                   decoration: const InputDecoration(
-                    labelText: "Preferred Cuisine",
+                    labelText: "Preferred Cuisine (Optional)",
                     border: OutlineInputBorder(),
                   ),
-                  onChanged: (value) => _cuisine = value,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Please enter your preferred cuisine.";
-                    }
-                    return null;
-                  },
                 ),
                 const SizedBox(height: 16),
 
-                // Allergies (free text)
+                // Allergies (free text).
                 TextFormField(
+                  controller: _allergiesController,
                   decoration: const InputDecoration(
-                    labelText: "Allergies",
+                    labelText: "Allergies (Optional)",
                     border: OutlineInputBorder(),
                   ),
-                  onChanged: (value) => _allergies = value,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Please enter your allergies.";
-                    }
-                    return null;
-                  },
                 ),
                 const SizedBox(height: 16),
 
-                // Meals per Day (numeric input)
+                // Meals per Day (numeric input).
                 TextFormField(
+                  controller: _mealsPerDayController,
                   decoration: const InputDecoration(
                     labelText: "Meals per Day",
                     border: OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
-                  onChanged: (value) {
-                    _mealsPerDay = int.tryParse(value);
-                  },
                   validator: (value) {
                     if (value == null || value.isEmpty || int.tryParse(value) == null) {
                       return "Please enter a valid number of meals.";
@@ -209,7 +247,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Save Preferences Button
+                // Save Preferences Button.
                 ElevatedButton(
                   onPressed: () {
                     if (_formKey.currentState?.validate() ?? false) {

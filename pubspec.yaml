@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  dropdown_button2: ^2.0.5
+  flutter_markdown: ^0.6.14
   flutter_dotenv: ^5.2.1
   firebase_core: ^3.11.0
   firebase_auth: ^5.4.2

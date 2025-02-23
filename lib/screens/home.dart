@@ -4,7 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartfood/auth_service.dart';
 import 'package:smartfood/food_scraper.dart';
 import 'package:smartfood/screens/signin.dart';
-import 'package:smartfood/screens/settings_screen.dart'; // Import the settings screen
+import 'package:smartfood/screens/settings_screen.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -184,8 +185,9 @@ class _HomeState extends State<Home> {
                   if (_restaurantMenuList.isNotEmpty) ...[
                     const SizedBox(height: 10),
                     if (_aiResponse.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
+                      MarkdownBody(
+                        data: _aiResponse,
+                        styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
                       ),
                   ],
                 ],
