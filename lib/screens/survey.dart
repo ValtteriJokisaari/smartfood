@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:multi_select_flutter/multi_select_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartfood/screens/home.dart';
 
@@ -11,17 +12,59 @@ class SurveyScreen extends StatefulWidget {
 
 class _SurveyScreenState extends State<SurveyScreen> {
   final _formKey = GlobalKey<FormState>();
-  String _dietaryRestrictions = "";
-  String _goal = "";
+
+  // Options for dietary restrictions with an "Other" option added.
+  final List<String> _dietaryRestrictionsOptions = [
+    "Vegetarian",
+    "Vegan",
+    "Carnivore",
+    "Lactose intolerance",
+    "Gluten intolerance",
+    "Kosher",
+    "Halal",
+    "Other"
+  ];
+
+  final List<String> _primaryGoalsOptions = [
+    "Weight Loss",
+    "Muscle Gain",
+    "Maintain Health",
+    "Increase Energy",
+  ];
+
+  // Selected values
+  List<String> _selectedDietaryRestrictions = []; // Supports multiple choices
+  String? _selectedPrimaryGoal;
+
+  // Variable to store user input for the "Other" dietary restriction
+  String _otherDietaryRestriction = "";
+
+  // Other free-text fields
   String _cuisine = "";
-  int _mealsPerDay = 3;
+  String _allergies = "";
+  int? _mealsPerDay; // Initially null
 
   Future<void> _savePreferences() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('dietaryRestrictions', _dietaryRestrictions);
-    await prefs.setString('goal', _goal);
+
+    // Process dietary restrictions:
+    // If "Other" is selected and input is provided, replace it with the custom text.
+    String finalDietaryRestrictions;
+    if (_selectedDietaryRestrictions.contains("Other") &&
+        _otherDietaryRestriction.trim().isNotEmpty) {
+      List<String> restrictions = List.from(_selectedDietaryRestrictions);
+      int otherIndex = restrictions.indexOf("Other");
+      restrictions[otherIndex] = "Other: $_otherDietaryRestriction";
+      finalDietaryRestrictions = restrictions.join(', ');
+    } else {
+      finalDietaryRestrictions = _selectedDietaryRestrictions.join(', ');
+    }
+
+    await prefs.setString('dietaryRestrictions', finalDietaryRestrictions);
+    await prefs.setString('goal', _selectedPrimaryGoal ?? "");
     await prefs.setString('cuisine', _cuisine);
-    await prefs.setInt('mealsPerDay', _mealsPerDay);
+    await prefs.setString('allergies', _allergies);
+    await prefs.setInt('mealsPerDay', _mealsPerDay ?? 0);
     await prefs.setBool('hasPreferences', true);
 
     // Navigate to Home after saving
@@ -39,69 +82,144 @@ class _SurveyScreenState extends State<SurveyScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: Column(
-            children: [
-              // Dietary Restrictions
-              TextFormField(
-                decoration: const InputDecoration(labelText: "Dietary Restrictions"),
-                onChanged: (value) => _dietaryRestrictions = value,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Please enter your dietary restrictions.";
-                  }
-                  return null;
-                },
-              ),
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                // Multi-select for Dietary Restrictions
+                MultiSelectDialogField(
+                  items: _dietaryRestrictionsOptions
+                      .map((e) => MultiSelectItem<String>(e, e))
+                      .toList(),
+                  title: const Text("Dietary Restrictions"),
+                  buttonText: const Text("Select Dietary Restrictions"),
+                  listType: MultiSelectListType.CHIP,
+                  initialValue: _selectedDietaryRestrictions,
+                  onConfirm: (selected) {
+                    setState(() {
+                      _selectedDietaryRestrictions = selected.cast<String>();
+                    });
+                  },
+                  validator: (selected) {
+                    if (selected == null || selected.isEmpty) {
+                      return "Please select at least one option";
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
 
-              // Primary Goal
-              TextFormField(
-                decoration: const InputDecoration(labelText: "Primary Goal"),
-                onChanged: (value) => _goal = value,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Please enter your primary goal.";
-                  }
-                  return null;
-                },
-              ),
+                // If "Other" is selected, show an additional text field.
+                if (_selectedDietaryRestrictions.contains("Other"))
+                  TextFormField(
+                    decoration: const InputDecoration(
+                      labelText: "Please specify your dietary restriction",
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _otherDietaryRestriction = value;
+                      });
+                    },
+                    validator: (value) {
+                      if (_selectedDietaryRestrictions.contains("Other") &&
+                          (value == null || value.isEmpty)) {
+                        return "Please specify your dietary restriction.";
+                      }
+                      return null;
+                    },
+                  ),
+                if (_selectedDietaryRestrictions.contains("Other"))
+                  const SizedBox(height: 16),
 
-              // Preferred Cuisine
-              TextFormField(
-                decoration: const InputDecoration(labelText: "Preferred Cuisine"),
-                onChanged: (value) => _cuisine = value,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Please enter your preferred cuisine.";
-                  }
-                  return null;
-                },
-              ),
+                // Primary Goal dropdown (single choice)
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: "Primary Goal",
+                    border: OutlineInputBorder(),
+                  ),
+                  value: _selectedPrimaryGoal,
+                  items: _primaryGoalsOptions.map((String option) {
+                    return DropdownMenuItem<String>(
+                      value: option,
+                      child: Text(option),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedPrimaryGoal = value;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Please select your primary goal.";
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
 
-              // Meals per Day
-              TextFormField(
-                decoration: const InputDecoration(labelText: "Meals per Day"),
-                keyboardType: TextInputType.number,
-                onChanged: (value) => _mealsPerDay = int.tryParse(value) ?? 3,
-                validator: (value) {
-                  if (value == null || value.isEmpty || int.tryParse(value) == null) {
-                    return "Please enter a valid number of meals.";
-                  }
-                  return null;
-                },
-              ),
+                // Preferred Cuisine (free text)
+                TextFormField(
+                  decoration: const InputDecoration(
+                    labelText: "Preferred Cuisine",
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (value) => _cuisine = value,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Please enter your preferred cuisine.";
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
 
-              const SizedBox(height: 20),
+                // Allergies (free text)
+                TextFormField(
+                  decoration: const InputDecoration(
+                    labelText: "Allergies",
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (value) => _allergies = value,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Please enter your allergies.";
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
 
-              // Save Preferences Button
-              ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState?.validate() ?? false) {
-                    _savePreferences();
-                  }
-                },
-                child: const Text("Save Preferences"),
-              ),
-            ],
+                // Meals per Day (numeric input)
+                TextFormField(
+                  decoration: const InputDecoration(
+                    labelText: "Meals per Day",
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                  onChanged: (value) {
+                    _mealsPerDay = int.tryParse(value);
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty || int.tryParse(value) == null) {
+                      return "Please enter a valid number of meals.";
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+
+                // Save Preferences Button
+                ElevatedButton(
+                  onPressed: () {
+                    if (_formKey.currentState?.validate() ?? false) {
+                      _savePreferences();
+                    }
+                  },
+                  child: const Text("Save Preferences"),
+                ),
+              ],
+            ),
           ),
         ),
       ),

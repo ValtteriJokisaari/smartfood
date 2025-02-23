@@ -62,9 +62,8 @@ class _HomeState extends State<Home> {
 
     setState(() {
       _restaurantMenuList = restaurantMenuList;
-      _scraperMessage = restaurantMenuList.isNotEmpty
-          ? "Menus fetched successfully!"
-          : "No menus found.";
+      _scraperMessage =
+      restaurantMenuList.isNotEmpty ? "Menus fetched successfully!" : "No menus found.";
     });
 
     _filterMenusWithAI();
@@ -78,17 +77,18 @@ class _HomeState extends State<Home> {
       return;
     }
 
-    String question = """
-      Which options are suitable for someone who follows a $_dietaryRestrictions diet and is allergic to $_allergies?
-      Provide the filtered options based on these preferences. Also, mention the user's preferences.
-    """;
-
     setState(() {
       _aiResponse = "Analyzing menus...";
     });
 
-    String response =
-    await _foodScraper.askLLMAboutDietaryOptions(_restaurantMenuList, question);
+    // Create a dictionary (Map) containing user preferences.
+    Map<String, String> userPreferences = {
+      "dietaryRestrictions": _dietaryRestrictions,
+      "allergies": _allergies,
+    };
+
+    // Pass the dictionary to the food scraper method.
+    String response = await _foodScraper.askLLMAboutDietaryOptions(_restaurantMenuList, userPreferences);
 
     setState(() {
       _aiResponse = response;
@@ -162,7 +162,8 @@ class _HomeState extends State<Home> {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  // City input field
+                  SizedBox(height: 10),
+                  // Text field to enter city
                   TextField(
                     controller: _cityController,
                     decoration: const InputDecoration(
@@ -185,10 +186,6 @@ class _HomeState extends State<Home> {
                     if (_aiResponse.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          _aiResponse,
-                          style: const TextStyle(fontSize: 16, color: Colors.red),
-                        ),
                       ),
                   ],
                 ],

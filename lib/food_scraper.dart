@@ -77,19 +77,25 @@ class FoodScraper {
     return prompt.toString();
   }
 
-  /// Queries the LLM with dietary-related questions
-  Future<String> askLLMAboutDietaryOptions(List<Map<String, String>> menus, String dietaryQuestionAnswers) async {
+  /// Queries the LLM with dietary-related questions using a dictionary of user preferences.
+  Future<String> askLLMAboutDietaryOptions(
+      List<Map<String, String>> menus, Map<String, String> userPreferences) async {
     if (menus.isEmpty) return "No menus available to analyze.";
+
+    // Extract preferences from the dictionary.
+    String dietaryRestrictions = userPreferences["dietaryRestrictions"] ?? "None";
+    String allergies = userPreferences["allergies"] ?? "None";
 
     String formattedMenus = formatMenusForLLM(menus, "your location");
 
     String fullPrompt = """
     I have the following lunch menus available in your area:
-
+    
     $formattedMenus
-
-    Question: $dietaryQuestionAnswers
-
+    
+    Which options are suitable for someone who follows a $dietaryRestrictions diet and is allergic to $allergies?
+    Provide the filtered options based on these preferences. Also, mention the user's preferences.
+    
     Please provide dietary recommendations based on the following options:
     - List the recommended dishes that align with the given dietary preferences.
     - For each recommendation, include:
@@ -97,13 +103,13 @@ class FoodScraper {
       - The dish name
       - Any dietary information (e.g., gluten-free, vegetarian, etc.)
       - A brief note on why it's a good option for the dietary restrictions
-
+    
     Your response should be in the following format:
-
+    
     1. **Restaurant Name**: Recommended Dish (Dietary Info) - Reasoning
     2. **Restaurant Name**: Recommended Dish (Dietary Info) - Reasoning
     3. (continue with more options)
-
+    
     Please ensure the response is clear and easy to follow, with a focus on matching the dietary preferences and allergies mentioned.
     """;
 
