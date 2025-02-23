@@ -214,15 +214,9 @@ class _SurveyScreenState extends State<SurveyScreen> {
                 TextFormField(
                   controller: _cuisineController,
                   decoration: const InputDecoration(
-                    labelText: "Preferred Cuisine",
+                    labelText: "Preferred Cuisine (Optional)",
                     border: OutlineInputBorder(),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Please enter your preferred cuisine.";
-                    }
-                    return null;
-                  },
                 ),
                 const SizedBox(height: 16),
 
@@ -230,15 +224,9 @@ class _SurveyScreenState extends State<SurveyScreen> {
                 TextFormField(
                   controller: _allergiesController,
                   decoration: const InputDecoration(
-                    labelText: "Allergies",
+                    labelText: "Allergies (Optional)",
                     border: OutlineInputBorder(),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Please enter your allergies.";
-                    }
-                    return null;
-                  },
                 ),
                 const SizedBox(height: 16),
 

@@ -94,6 +94,8 @@ class FoodScraper {
     $formattedMenus
     
     Which options are suitable for someone who follows a $dietaryRestrictions diet and is allergic to $allergies?
+    f $dietaryRestrictions is null then provide general food that follow other user's preferences
+    f $allergies is null then provide general food that follow other user's preferences
     Provide the filtered options based on these preferences. Also, mention the user's preferences.
     
     Please provide dietary recommendations based on the following options:
@@ -101,7 +103,7 @@ class FoodScraper {
     - For each recommendation, include:
       - The restaurant name
       - The dish name
-      - Any dietary information (e.g., gluten-free, vegetarian, etc.)
+      - Any dietary information (e.g., gluten-free, vegetarian, etc.), if there is no allergies, do not mention them
       - A brief note on why it's a good option for the dietary restrictions
     
     Your response should be in the following format:
