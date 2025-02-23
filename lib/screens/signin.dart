@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:smartfood/auth_service.dart';
 import 'package:smartfood/screens/home.dart';
+import 'package:smartfood/screens/age_screen.dart';
 import 'package:smartfood/screens/survey.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -11,20 +12,34 @@ class SignInScreen extends StatelessWidget {
     final user = await AuthService().signInWithGoogle();
     if (user != null) {
       final prefs = await SharedPreferences.getInstance();
-      bool hasPreferences = prefs.getBool('hasPreferences') ?? false;
+      // Check if account info (age) exists.
+      bool hasAccountInfo = prefs.getBool('hasAccountInfo') ?? false;
 
-      if (!hasPreferences) {
-        // Navigate to Survey screen if preferences are missing
+      if (!hasAccountInfo) {
+        // Navigate to AgeScreen, passing the auto-filled name and email.
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const SurveyScreen()),
+          MaterialPageRoute(
+            builder: (context) => AgeScreen(
+              name: user.displayName ?? "No Name",
+              email: user.email ?? "No Email",
+            ),
+          ),
         );
       } else {
-        // Navigate to Home if preferences exist
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const Home()),
-        );
+        // If account info exists, check if dietary preferences are set.
+        bool hasPreferences = prefs.getBool('hasPreferences') ?? false;
+        if (!hasPreferences) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const SurveyScreen()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const Home()),
+          );
+        }
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -49,15 +64,14 @@ class SignInScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // App Logo or Icon
+                // App Logo or Icon.
                 Image.asset(
-                  'assets/logo.png', // Add your logo in assets
+                  'assets/logo.png',
                   width: 150,
                   height: 150,
                 ),
-                const SizedBox(height: 20), // Reduced space between logo and text
-
-                // App Name
+                const SizedBox(height: 20),
+                // App Name.
                 const Text(
                   "SmartFood",
                   style: TextStyle(
@@ -67,9 +81,8 @@ class SignInScreen extends StatelessWidget {
                     letterSpacing: 1.5,
                   ),
                 ),
-                const SizedBox(height: 20), // Adjusted space between text and button
-
-                // Sign-In Button with hover effect
+                const SizedBox(height: 20),
+                // Sign-In Button.
                 GestureDetector(
                   onTap: () => _signIn(context),
                   child: AnimatedContainer(
