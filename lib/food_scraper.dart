@@ -80,30 +80,47 @@ class FoodScraper {
     String formattedMenus = formatMenusForLLM(menus);
 
     String fullPrompt = """
-    The following lunch menus are available in $city:
-    
+    I am a user looking for lunch options in **$city**. Below are the available restaurant menus:
+
     $formattedMenus
-    
-    Which options are suitable for me who follows a $dietaryRestrictions diet and is allergic to $allergies?
-    f $dietaryRestrictions is null then provide general food that follow other user's preferences
-    f $allergies is null then provide general food that follow other user's preferences
-    Provide the filtered options based on these preferences. Also, mention the user's preferences.
-    
-    Please provide dietary recommendations based on the following options:
-    - List the recommended dishes that align with the given dietary preferences.
-    - For each recommendation, include:
-      - The restaurant name
-      - The dish name
-      - Any dietary information (e.g., gluten-free, vegetarian, etc.), if there is no allergies, do not mention them
-      - A brief note on why it's a good option for the dietary restrictions
-    
-    Your response should list restaurants in the following format:
-    
-    **Restaurant Name**: Recommended Dish (Dietary Info) - Reasoning
-    
-    Please ensure the response is clear and easy to follow, with a focus on matching the dietary preferences and allergies mentioned.
+
+    ### User Preferences:
+    - **Dietary Restrictions:** $dietaryRestrictions
+    - **Allergies:** $allergies
+
+    ### Instructions:
+    - Identify **dishes that match my dietary needs** while avoiding allergens and taking into account my dietary restrictions.
+    - If **no specific dietary restrictions** are provided, suggest balanced and healthy options.
+    - If **no allergies are specified**, do not mention them in recommendations.
+
+    ### Response Format:
+    Provide a clear and structured response suitable for a **mobile app display**. Use the following format:
+
+    Lunch options in (city) for [LIST HERE MY DIETARY RESTRICTIONS AND ALLERGIES THAT I PROVIDED]
+
+    📍 Restaurant Name  
+    🍽 Dish Name (Dietary Info, if applicable)* - 💰 Price  
+    📝 Dish Description 
+    ✅ Why this dish is recommended for me  
+    🔗 [More Info](restaurant link)  
+
+    Example Output:
+    📍 Green Bites Café  
+    🍽 Quinoa Salad (Vegetarian, Gluten-Free) - 💰 €9.90  
+    📝 A fresh salad made with organic quinoa, cherry tomatoes, avocado, and a zesty lemon dressing.  
+    ✅ High in protein and fiber, perfect for a balanced vegetarian meal.  
+    🔗 [More Info](https://example.com)  
+
+    📍 Healthy Eats Deli  
+    🍽 Grilled Salmon with Steamed Vegetables (High-Protein, Omega-3 Rich) - 💰 €12.50 
+    📝 A grilled Norwegian salmon fillet served with a mix of broccoli, carrots, and a light herb butter sauce.  
+    ✅ Great for a high-protein diet, rich in omega-3 fatty acids for heart health.  
+    🔗 [More Info](https://example.com)  
+
+
+    Please ensure your response is structured, concise, and **optimized for a mobile app layout**.
     """;
 
-    return await _openAIService.getResponse(fullPrompt);
-  }
-}
+        return await _openAIService.getResponse(fullPrompt);
+      }
+    }
