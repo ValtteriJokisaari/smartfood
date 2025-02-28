@@ -51,6 +51,13 @@ class _AgeScreenState extends State<AgeScreen> {
         _selectedAge = storedAge;
       });
     }
+
+  }
+
+  void _calculateBmi(double height, double weight) {
+    // BMI = weight  / height^2
+    final heightInMeters = height / 100;
+    _bmi = weight / pow(heightInMeters, 2);
   }
 
   void _calculateBmi(double height, double weight) {
@@ -62,8 +69,14 @@ class _AgeScreenState extends State<AgeScreen> {
   Future<void> _saveUserData() async {
     if (_formKey.currentState?.validate() ?? false) {
       final prefs = await SharedPreferences.getInstance();
-
+      
+  Future<void> _saveUserData() async {
+    
+    if (_formKey.currentState?.validate() ?? false) {
+      final prefs = await SharedPreferences.getInstance();
+      
       await prefs.setInt('age', _selectedAge!);
+      
       await prefs.setBool('hasAccountInfo', true);
 
       final heightText = _heightController.text.trim();
@@ -79,7 +92,7 @@ class _AgeScreenState extends State<AgeScreen> {
           await prefs.setDouble('height', height);
         }
       }
-
+      
       if (weightText.isNotEmpty) {
         final parsedWeight = double.tryParse(weightText);
         if (parsedWeight != null && parsedWeight > 0) {
@@ -121,7 +134,6 @@ class _AgeScreenState extends State<AgeScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
