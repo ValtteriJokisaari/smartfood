@@ -24,8 +24,8 @@ class SettingsScreen extends StatelessWidget {
         children: [
           ListTile(
             leading: const Icon(Icons.person),
-            title: const Text("Account Setup"),
-            subtitle: const Text("Update your age"),
+            title: const Text("User Profile"),
+            subtitle: const Text("Update your age, height and weight"),
             trailing: const Icon(Icons.arrow_forward_ios),
             onTap: () async {
               Map<String, String> userInfo = await _getUserInfo();
