@@ -42,6 +42,13 @@ class _HomeState extends State<Home> {
       _dietaryRestrictions = prefs.getString('dietaryRestrictions') ?? "None";
       _allergies = prefs.getString('allergies') ?? "None";
     });
+
+    String? storedCity = prefs.getString('city');
+    if (storedCity != null && storedCity.isNotEmpty) {
+      setState(() {
+        _cityController.text = storedCity;
+      });
+    }
   }
 
   Future<void> _checkUserSignIn() async {

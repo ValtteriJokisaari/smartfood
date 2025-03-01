@@ -1,10 +1,10 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartfood/screens/survey.dart';
 import 'package:smartfood/screens/home.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
-import 'dart:math';
 
 class AgeScreen extends StatefulWidget {
   final String? name;
@@ -25,6 +25,7 @@ class _AgeScreenState extends State<AgeScreen> {
 
   final TextEditingController _heightController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
+  final TextEditingController _cityController = TextEditingController();
 
   double? _bmi;
 
@@ -44,7 +45,6 @@ class _AgeScreenState extends State<AgeScreen> {
     }
 
     final prefs = await SharedPreferences.getInstance();
-
     int? storedAge = prefs.getInt('age');
     if (storedAge != null) {
       setState(() {
@@ -52,31 +52,40 @@ class _AgeScreenState extends State<AgeScreen> {
       });
     }
 
+    double? storedHeight = prefs.getDouble('height');
+    if (storedHeight != null) {
+      setState(() {
+        _heightController.text = storedHeight.toString();
+      });
+    }
+
+    double? storedWeight = prefs.getDouble('weight');
+    if (storedWeight != null) {
+      setState(() {
+        _weightController.text = storedWeight.toString();
+      });
+    }
+
+    String? storedCity = prefs.getString('city');
+    if (storedCity != null) {
+      setState(() {
+        _cityController.text = storedCity;
+      });
+    }
   }
 
   void _calculateBmi(double height, double weight) {
-    // BMI = weight  / height^2
+    // BMI = weight / (height^2)
     final heightInMeters = height / 100;
     _bmi = weight / pow(heightInMeters, 2);
   }
 
-  void _calculateBmi(double height, double weight) {
-    // BMI = weight / height^2
-    final heightInMeters = height / 100;
-    _bmi = weight / pow(heightInMeters, 2);
-  }
 
   Future<void> _saveUserData() async {
     if (_formKey.currentState?.validate() ?? false) {
       final prefs = await SharedPreferences.getInstance();
-      
-  Future<void> _saveUserData() async {
-    
-    if (_formKey.currentState?.validate() ?? false) {
-      final prefs = await SharedPreferences.getInstance();
-      
+
       await prefs.setInt('age', _selectedAge!);
-      
       await prefs.setBool('hasAccountInfo', true);
 
       final heightText = _heightController.text.trim();
@@ -92,7 +101,7 @@ class _AgeScreenState extends State<AgeScreen> {
           await prefs.setDouble('height', height);
         }
       }
-      
+
       if (weightText.isNotEmpty) {
         final parsedWeight = double.tryParse(weightText);
         if (parsedWeight != null && parsedWeight > 0) {
@@ -107,6 +116,9 @@ class _AgeScreenState extends State<AgeScreen> {
           await prefs.setDouble('bmi', _bmi!);
         }
       }
+
+      final cityText = _cityController.text.trim();
+      await prefs.setString('city', cityText);
 
       bool hasPreferences = prefs.getBool('hasPreferences') ?? false;
       if (!hasPreferences) {
@@ -137,6 +149,7 @@ class _AgeScreenState extends State<AgeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Display Name & Email
               Row(
                 children: [
                   const Icon(Icons.person),
@@ -153,6 +166,7 @@ class _AgeScreenState extends State<AgeScreen> {
                 ],
               ),
               const SizedBox(height: 20),
+              // Age Dropdown
               DropdownButtonFormField2<int>(
                 decoration: InputDecoration(
                   isDense: true,
@@ -183,6 +197,7 @@ class _AgeScreenState extends State<AgeScreen> {
                 },
               ),
               const SizedBox(height: 20),
+              // Height
               Text(
                 "Height (Optional)",
                 style: TextStyle(fontWeight: FontWeight.bold),
@@ -196,6 +211,7 @@ class _AgeScreenState extends State<AgeScreen> {
                 ),
               ),
               const SizedBox(height: 20),
+              // Weight
               Text(
                 "Weight (Optional)",
                 style: TextStyle(fontWeight: FontWeight.bold),
@@ -209,6 +225,21 @@ class _AgeScreenState extends State<AgeScreen> {
                 ),
               ),
               const SizedBox(height: 20),
+              // City (New)
+              Text(
+                "City (Optional)",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              TextFormField(
+                controller: _cityController,
+                keyboardType: TextInputType.text,
+                decoration: const InputDecoration(
+                  hintText: "Enter your city",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Save Button
               ElevatedButton(
                 onPressed: _saveUserData,
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
