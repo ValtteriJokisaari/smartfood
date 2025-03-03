@@ -135,14 +135,37 @@ class _SurveyScreenState extends State<SurveyScreen> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                MultiSelectDialogField(
+                MultiSelectDialogField<String>(
                   items: _dietaryRestrictionsOptions
                       .map((e) => MultiSelectItem<String>(e, e))
                       .toList(),
-                  title: const Text("Dietary Restrictions"),
-                  buttonText: const Text("Select Dietary Restrictions"),
+                  title: Text("Dietary Restrictions"),
+                  buttonText: Text("Select Dietary Restrictions"),
                   listType: MultiSelectListType.CHIP,
                   initialValue: _selectedDietaryRestrictions,
+                  selectedItemsTextStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 1,
+                    ),
+                  ),
+                  buttonIcon: Icon(Icons.arrow_drop_down),
+                  chipDisplay: MultiSelectChipDisplay<String>(
+                    onTap: (item) {
+                      setState(() {
+                        _selectedDietaryRestrictions.remove(item);
+                      });
+                    },
+                    chipColor: Theme.of(context).colorScheme.primary,
+                    textStyle: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                  ),
+                  searchable: true,
                   onConfirm: (selected) {
                     setState(() {
                       _selectedDietaryRestrictions = selected.cast<String>();
