@@ -135,19 +135,26 @@ class _SurveyScreenState extends State<SurveyScreen> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                MultiSelectDialogField(
-                  items: _dietaryRestrictionsOptions
-                      .map((e) => MultiSelectItem<String>(e, e))
-                      .toList(),
-                  title: const Text("Dietary Restrictions"),
-                  buttonText: const Text("Select Dietary Restrictions"),
-                  listType: MultiSelectListType.CHIP,
-                  initialValue: _selectedDietaryRestrictions,
-                  onConfirm: (selected) {
-                    setState(() {
-                      _selectedDietaryRestrictions = selected.cast<String>();
-                    });
-                  },
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(5.0),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: MultiSelectDialogField(
+                    items: _dietaryRestrictionsOptions
+                        .map((e) => MultiSelectItem<String>(e, e))
+                        .toList(),
+                    title: const Text("Dietary Restrictions"),
+                    buttonText: const Text("Select Dietary Restrictions"),
+                    listType: MultiSelectListType.CHIP,
+                    initialValue: _selectedDietaryRestrictions,
+                    onConfirm: (selected) {
+                      setState(() {
+                        _selectedDietaryRestrictions = selected.cast<String>();
+                      });
+                    },
+                  ),
                 ),
                 const SizedBox(height: 16),
 
