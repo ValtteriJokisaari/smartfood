@@ -85,40 +85,33 @@ class _AgeScreenState extends State<AgeScreen> {
     if (_formKey.currentState?.validate() ?? false) {
       final prefs = await SharedPreferences.getInstance();
 
-      await prefs.setInt('age', _selectedAge!);
+      if (_selectedAge != null) {
+        await prefs.setInt('age', _selectedAge!);
+      }
       await prefs.setBool('hasAccountInfo', true);
 
       final heightText = _heightController.text.trim();
       final weightText = _weightController.text.trim();
 
-      double? height;
-      double? weight;
+      double? height = double.tryParse(heightText);
+      double? weight = double.tryParse(weightText);
 
-      if (heightText.isNotEmpty) {
-        final parsedHeight = double.tryParse(heightText);
-        if (parsedHeight != null && parsedHeight > 0) {
-          height = parsedHeight;
-          await prefs.setDouble('height', height);
-        }
+      if (height != null && height > 0) {
+        await prefs.setString('height', height.toString());
       }
 
-      if (weightText.isNotEmpty) {
-        final parsedWeight = double.tryParse(weightText);
-        if (parsedWeight != null && parsedWeight > 0) {
-          weight = parsedWeight;
-          await prefs.setDouble('weight', weight);
-        }
+      if (weight != null && weight > 0) {
+        await prefs.setString('weight', weight.toString());
       }
 
       if (height != null && weight != null) {
         _calculateBmi(height, weight);
         if (_bmi != null) {
-          await prefs.setDouble('bmi', _bmi!);
+          await prefs.setString('bmi', _bmi!.toString());
         }
       }
 
-      final cityText = _cityController.text.trim();
-      await prefs.setString('city', cityText);
+      await prefs.setString('city', _cityController.text.trim());
 
       bool hasPreferences = prefs.getBool('hasPreferences') ?? false;
       if (!hasPreferences) {

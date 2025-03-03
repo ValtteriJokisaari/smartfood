@@ -1,5 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as html;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'openai_service.dart';
 
 class FoodScraper {
@@ -76,6 +77,9 @@ class FoodScraper {
 
     String dietaryRestrictions = userPreferences["dietaryRestrictions"] ?? "None";
     String allergies = userPreferences["allergies"] ?? "None";
+    final prefs = await SharedPreferences.getInstance();
+    String bmi = prefs.getString('bmi') ?? "Unknown";
+
 
     String formattedMenus = formatMenusForLLM(menus);
 
@@ -87,9 +91,14 @@ class FoodScraper {
     ### User Preferences:
     - **Dietary Restrictions:** $dietaryRestrictions
     - **Allergies:** $allergies
+    - **BMI:** $bmi
 
     ### Instructions:
     - Identify **dishes that match my dietary needs** while avoiding allergens and taking into account my dietary restrictions.
+    - Take my **BMI ($bmi)** into account when recommending meals.
+    - If BMI is high, suggest **lower-calorie, balanced meals**.
+    - If BMI is low, suggest **high-energy, nutrient-dense foods**.
+    - If **BMI** is not provided, then ignore BMI
     - If **no specific dietary restrictions** are provided, suggest balanced and healthy options.
     - If **no allergies are specified**, do not mention them in recommendations.
 
@@ -97,21 +106,23 @@ class FoodScraper {
     Provide a clear and structured response suitable for a **mobile app display**. Use the following format:
 
     Lunch options in (city) for [LIST HERE MY DIETARY RESTRICTIONS AND ALLERGIES THAT I PROVIDED]
-
-    📍 Restaurant Name  
+    📍 Restaurant Name
+    ⏰ Opening Hours  
     🍽 Dish Name (Dietary Info, if applicable)* - 💰 Price  
     📝 Dish Description 
-    ✅ Why this dish is recommended for me  
+    ✅ Why this dish is recommended for me
     🔗 [More Info](restaurant link)  
 
     Example Output:
-    📍 Green Bites Café  
+    📍 Green Bites Café
+    ⏰ 11:00-14:00  
     🍽 Quinoa Salad (Vegetarian, Gluten-Free) - 💰 €9.90  
     📝 A fresh salad made with organic quinoa, cherry tomatoes, avocado, and a zesty lemon dressing.  
     ✅ High in protein and fiber, perfect for a balanced vegetarian meal.  
     🔗 [More Info](https://example.com)  
 
-    📍 Healthy Eats Deli  
+    📍 Healthy Eats Deli
+    ⏰ 10:30-15:00  
     🍽 Grilled Salmon with Steamed Vegetables (High-Protein, Omega-3 Rich) - 💰 €12.50 
     📝 A grilled Norwegian salmon fillet served with a mix of broccoli, carrots, and a light herb butter sauce.  
     ✅ Great for a high-protein diet, rich in omega-3 fatty acids for heart health.  
