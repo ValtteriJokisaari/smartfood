@@ -1,6 +1,5 @@
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as html;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'openai_service.dart';
 
 class FoodScraper {
@@ -77,9 +76,7 @@ class FoodScraper {
 
     String dietaryRestrictions = userPreferences["dietaryRestrictions"] ?? "None";
     String allergies = userPreferences["allergies"] ?? "None";
-    final prefs = await SharedPreferences.getInstance();
-    String bmi = prefs.getString('bmi') ?? "Unknown";
-
+    String bmi = userPreferences["bmi"] ?? "None";
 
     String formattedMenus = formatMenusForLLM(menus);
 

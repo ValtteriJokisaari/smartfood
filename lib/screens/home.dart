@@ -28,6 +28,7 @@ class _HomeState extends State<Home> {
 
   String _dietaryRestrictions = "";
   String _allergies = "";
+  String _bmi = "";
 
   @override
   void initState() {
@@ -41,6 +42,7 @@ class _HomeState extends State<Home> {
     setState(() {
       _dietaryRestrictions = prefs.getString('dietaryRestrictions') ?? "None";
       _allergies = prefs.getString('allergies') ?? "None";
+      _bmi = prefs.getString('bmi') ?? "None";
     });
 
     String? storedCity = prefs.getString('city');
@@ -91,6 +93,7 @@ class _HomeState extends State<Home> {
     Map<String, String> userPreferences = {
       "dietaryRestrictions": _dietaryRestrictions,
       "allergies": _allergies,
+      "bmi": _bmi,
     };
 
     String response = await _foodScraper.askLLMAboutDietaryOptions(
