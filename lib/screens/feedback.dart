@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FeedbackScreen extends StatefulWidget {
-  final String menuId; // The menu the user is providing feedback for
-  const FeedbackScreen({Key? key, required this.menuId}) : super(key: key);
+  final String menuId;
+  final String userId;
+  const FeedbackScreen({Key? key, required this.menuId, required this.userId})
+      : super(key: key);
 
   @override
   _FeedbackScreenState createState() => _FeedbackScreenState();
@@ -12,6 +14,7 @@ class FeedbackScreen extends StatefulWidget {
 class _FeedbackScreenState extends State<FeedbackScreen> {
   final TextEditingController _ratingController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
+  String _feedbackMessage = "";
 
   Future<void> _submitFeedback() async {
     String rating = _ratingController.text;
@@ -24,25 +27,27 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       return;
     }
 
-    Feedback feedback = Feedback(
-      menuId: widget.menuId,
-      userId: "sampleUserId",
-      rating: int.parse(rating),
-      comment: comment,
-      timestamp: Timestamp.now(),
-    );
-
-    // Send feedback to Firestore
     try {
-      CollectionReference feedbackCollection =
-          FirebaseFirestore.instance.collection('feedback');
-      await feedbackCollection.add(feedback.toMap());
+      Feedback feedback = Feedback(
+        menuId: widget.menuId,
+        userId: widget.userId,
+        rating: int.parse(rating),
+        comment: comment,
+        timestamp: Timestamp.now(),
+      );
+
+      // Send feedback to Firestore under the user's specific menu
+      await FirebaseFirestore.instance
+          .collection('feedback')
+          .doc(widget.userId)
+          .collection('menus')
+          .doc(widget.menuId)
+          .set(feedback.toMap());
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Feedback submitted successfully!")),
       );
 
-      // Clear input fields
       _ratingController.clear();
       _commentController.clear();
     } catch (e) {
@@ -50,6 +55,41 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         const SnackBar(content: Text("Error submitting feedback")),
       );
     }
+  }
+
+  // Method to load existing feedback if any
+  Future<void> _loadExistingFeedback() async {
+    try {
+      DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
+          .collection('feedback')
+          .doc(widget.userId)
+          .collection('menus')
+          .doc(widget.menuId)
+          .get();
+
+      if (docSnapshot.exists) {
+        // If feedback exists, populate the text fields
+        setState(() {
+          _ratingController.text = docSnapshot['rating'].toString();
+          _commentController.text = docSnapshot['comment'];
+          _feedbackMessage = "Feedback loaded successfully!";
+        });
+      } else {
+        setState(() {
+          _feedbackMessage = "No existing feedback for this menu.";
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _feedbackMessage = "Error loading feedback.";
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExistingFeedback(); // Load existing feedback when the screen is initialized
   }
 
   @override
@@ -63,6 +103,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: <Widget>[
+            // Rating input
             TextField(
               controller: _ratingController,
               decoration: const InputDecoration(
@@ -70,8 +111,10 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.number,
+              maxLength: 1, // Ensure rating is a single digit (1-5)
             ),
             const SizedBox(height: 10),
+            // Comment input
             TextField(
               controller: _commentController,
               decoration: const InputDecoration(
@@ -81,9 +124,16 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
               maxLines: 4,
             ),
             const SizedBox(height: 20),
+            // Feedback submission button
             ElevatedButton(
               onPressed: _submitFeedback,
               child: const Text('Submit Feedback'),
+            ),
+            const SizedBox(height: 10),
+            // Feedback status message
+            Text(
+              _feedbackMessage,
+              style: TextStyle(color: Colors.green[700]),
             ),
           ],
         ),
