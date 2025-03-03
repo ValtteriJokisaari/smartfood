@@ -86,8 +86,7 @@ class _HomeState extends State<Home> {
       _scraperMessage = "Fetching menus...";
     });
 
-    List<Map<String, String>> restaurantMenuList =
-        await _foodScraper.fetchLunchMenus(_cityController.text);
+    List<Map<String, String>> restaurantMenuList = await _foodScraper.fetchLunchMenus(_cityController.text);
 
     setState(() {
       _restaurantMenuList = restaurantMenuList;
@@ -214,12 +213,17 @@ class _HomeState extends State<Home> {
                     const SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: () {
+                        String menuId = DateTime.now().toIso8601String();
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => FeedbackScreen(
-                              menuId: "sampleMenuId",
+                              menuId: menuId,
                               userId: _user?.uid ?? "",
+                              dietaryRestrictions: _dietaryRestrictions,
+                              allergies: _allergies,
+                              aiResponse: _aiResponse,
+
                             ),
                           ),
                         );

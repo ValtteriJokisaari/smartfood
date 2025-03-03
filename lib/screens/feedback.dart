@@ -4,8 +4,18 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class FeedbackScreen extends StatefulWidget {
   final String menuId;
   final String userId;
-  const FeedbackScreen({Key? key, required this.menuId, required this.userId})
-      : super(key: key);
+  final String dietaryRestrictions;
+  final String allergies;
+  final String aiResponse;
+
+  const FeedbackScreen({
+    Key? key,
+    required this.menuId,
+    required this.userId,
+    required this.dietaryRestrictions,
+    required this.allergies,
+    required this.aiResponse,
+  }) : super(key: key);
 
   @override
   _FeedbackScreenState createState() => _FeedbackScreenState();
@@ -33,7 +43,10 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         userId: widget.userId,
         rating: int.parse(rating),
         comment: comment,
+        dietaryRestrictions: widget.dietaryRestrictions,
+        allergies: widget.allergies,
         timestamp: Timestamp.now(),
+        aiResponse: widget.aiResponse,
       );
 
       // Send feedback to Firestore under the user's specific menu
@@ -57,39 +70,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     }
   }
 
-  // Method to load existing feedback if any
-  Future<void> _loadExistingFeedback() async {
-    try {
-      DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
-          .collection('feedback')
-          .doc(widget.userId)
-          .collection('menus')
-          .doc(widget.menuId)
-          .get();
-
-      if (docSnapshot.exists) {
-        // If feedback exists, populate the text fields
-        setState(() {
-          _ratingController.text = docSnapshot['rating'].toString();
-          _commentController.text = docSnapshot['comment'];
-          _feedbackMessage = "Feedback loaded successfully!";
-        });
-      } else {
-        setState(() {
-          _feedbackMessage = "No existing feedback for this menu.";
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _feedbackMessage = "Error loading feedback.";
-      });
-    }
-  }
-
   @override
   void initState() {
     super.initState();
-    _loadExistingFeedback(); // Load existing feedback when the screen is initialized
   }
 
   @override
@@ -142,20 +125,27 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   }
 }
 
+
 // Feedback model class for structured data
 class Feedback {
   final String menuId;
   final String userId;
   final int rating;
   final String comment;
+  final String dietaryRestrictions;
+  final String allergies;
   final Timestamp timestamp;
+  final String aiResponse;
 
   Feedback({
     required this.menuId,
     required this.userId,
     required this.rating,
     required this.comment,
+    required this.dietaryRestrictions,
+    required this.allergies,
     required this.timestamp,
+    required this.aiResponse,
   });
 
   // Convert Feedback to a Map (for Firestore)
@@ -165,7 +155,10 @@ class Feedback {
       'userId': userId,
       'rating': rating,
       'comment': comment,
+      'dietaryRestrictions': dietaryRestrictions,
+      'allergies': allergies,
       'timestamp': timestamp,
+      'aiResponse': aiResponse,
     };
   }
 }
