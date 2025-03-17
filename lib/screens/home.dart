@@ -8,6 +8,7 @@ import 'package:smartfood/screens/signin.dart';
 import 'package:smartfood/screens/settings_screen.dart';
 import 'package:smartfood/screens/feedback.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -68,13 +69,10 @@ class _HomeState extends State<Home> {
   }
 
   Future<void> _saveUserData(User user) async {
-    // Check if the user data already exists in Firestore
     DocumentReference userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
-
     DocumentSnapshot docSnapshot = await userDocRef.get();
 
     if (!docSnapshot.exists) {
-      // Save the user's data (only if it doesn't exist)
       await userDocRef.set({
         'name': user.displayName,
         'email': user.email,
@@ -117,7 +115,8 @@ class _HomeState extends State<Home> {
     };
 
     String response = await _foodScraper.askLLMAboutDietaryOptions(
-        _restaurantMenuList, userPreferences, _cityController.text);
+        _restaurantMenuList, userPreferences, _cityController.text
+    );
 
     setState(() {
       _aiResponse = response;
@@ -134,6 +133,13 @@ class _HomeState extends State<Home> {
       context,
       MaterialPageRoute(builder: (context) => SignInScreen()),
     );
+  }
+
+  Future<void> _launchURL(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      print("Could not launch $url");
+    }
   }
 
   @override
@@ -188,7 +194,7 @@ class _HomeState extends State<Home> {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   TextField(
                     controller: _cityController,
                     decoration: const InputDecoration(
@@ -211,6 +217,11 @@ class _HomeState extends State<Home> {
                     if (_aiResponse.isNotEmpty)
                       MarkdownBody(
                         data: _aiResponse,
+                        onTapLink: (text, href, title) {
+                          if (href != null) {
+                            _launchURL(href);
+                          }
+                        },
                         styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
                       ),
                     const SizedBox(height: 20),
@@ -226,7 +237,6 @@ class _HomeState extends State<Home> {
                               dietaryRestrictions: _dietaryRestrictions,
                               allergies: _allergies,
                               aiResponse: _aiResponse,
-
                             ),
                           ),
                         );
