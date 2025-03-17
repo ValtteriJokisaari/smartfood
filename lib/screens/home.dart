@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartfood/auth_service.dart';
 import 'package:smartfood/food_scraper.dart';
 import 'package:smartfood/screens/signin.dart';
 import 'package:smartfood/screens/settings_screen.dart';
+import 'package:smartfood/screens/feedback.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 class Home extends StatefulWidget {
@@ -57,6 +59,25 @@ class _HomeState extends State<Home> {
       setState(() {
         _user = user;
       });
+
+      // Check if user data already exists in Firestore, if not, save it
+      _saveUserData(user);
+    }
+  }
+
+  Future<void> _saveUserData(User user) async {
+    // Check if the user data already exists in Firestore
+    DocumentReference userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+
+    DocumentSnapshot docSnapshot = await userDocRef.get();
+
+    if (!docSnapshot.exists) {
+      // Save the user's data (only if it doesn't exist)
+      await userDocRef.set({
+        'name': user.displayName,
+        'email': user.email,
+        'profilePicture': user.photoURL ?? '',
+      });
     }
   }
 
@@ -65,8 +86,7 @@ class _HomeState extends State<Home> {
       _scraperMessage = "Fetching menus...";
     });
 
-    List<Map<String, String>> restaurantMenuList =
-        await _foodScraper.fetchLunchMenus(_cityController.text);
+    List<Map<String, String>> restaurantMenuList = await _foodScraper.fetchLunchMenus(_cityController.text);
 
     setState(() {
       _restaurantMenuList = restaurantMenuList;
@@ -190,6 +210,26 @@ class _HomeState extends State<Home> {
                         data: _aiResponse,
                         styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
                       ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        String menuId = DateTime.now().toIso8601String();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => FeedbackScreen(
+                              menuId: menuId,
+                              userId: _user?.uid ?? "",
+                              dietaryRestrictions: _dietaryRestrictions,
+                              allergies: _allergies,
+                              aiResponse: _aiResponse,
+
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text("Submit Feedback"),
+                    ),
                   ],
                 ],
               ),
