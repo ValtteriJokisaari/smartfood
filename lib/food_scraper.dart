@@ -1,9 +1,11 @@
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as html;
+import 'database_service.dart';
 import 'openai_service.dart';
 
 class FoodScraper {
   final OpenAIService _openAIService = OpenAIService();
+  final DatabaseService _dbService = DatabaseService();
 
   Future<List<Map<String, String>>> fetchLunchMenus(String city) async {
     String sanitizedCity = city.replaceAll(RegExp(r'[äÄ]'), 'a').replaceAll(RegExp(r'[öÖ]'), 'o').toLowerCase();
@@ -37,7 +39,7 @@ class FoodScraper {
             }
             String dietInfo = dietTags.isNotEmpty ? " (${dietTags.join(", ")})" : "";
 
-            menu += "• $dish $dietInfo - $price\n";
+            menu += "• $dish$dietInfo - $price\n";
           }
 
           restaurantMenuList.add({
@@ -58,20 +60,72 @@ class FoodScraper {
     }
   }
 
+  Future<List<Map<String, dynamic>>> enhanceWithNutrition(List<Map<String, String>> menus) async {
+    List<Map<String, dynamic>> enhancedMenus = [];
+
+    for (var restaurant in menus) {
+      final menuItems = restaurant['menu']!.split('\n');
+      List<String> enhancedItems = [];
+
+      for (var item in menuItems) {
+        if (item.isEmpty) {
+          enhancedItems.add(item);
+          continue;
+        }
+
+        // Extract dish name
+        final dishPart = item.split('•').last.split(RegExp(r'[-–]')).first.trim();
+        final dishName = dishPart.replaceAll(RegExp(r'\(.*?\)'), '').trim();
+        final matches = await _dbService.searchSimilarFoods(dishName);
+
+        if (matches.isNotEmpty && matches.first['similarity'] > 0.4) {
+          final bestMatch = matches.first;
+          final energy = await _dbService.getEnergyValues(bestMatch['foodid'] as int);
+
+          if (energy != null) {
+            final kcal = (energy / 4.184).round();
+            enhancedItems.add('$item - 🔥 ${kcal}kcal');
+            continue;
+          }
+        }
+
+        enhancedItems.add(item);
+      }
+
+      enhancedMenus.add({
+        ...restaurant,
+        'menu': enhancedItems.join('\n'),
+      });
+    }
+
+    return enhancedMenus;
+  }
+
   /// Formats scraped data into an LLM-friendly prompt
-  String formatMenusForLLM(List<Map<String, String>> menus) {
+  String formatMenusForLLM(List<Map<String, dynamic>> menus) {
     StringBuffer prompt = StringBuffer();
     for (var restaurant in menus) {
       prompt.writeln("**${restaurant['name']}**");
       prompt.writeln("*Opening Hours:* ${restaurant['opening_hours']}");
+      prompt.writeln(_extractCalorieInfo(restaurant['menu']!));
       prompt.writeln("*Menu:*\n${restaurant['menu']}");
       prompt.writeln("[More Info](${restaurant['link']})\n");
     }
     return prompt.toString();
   }
+  String _extractCalorieInfo(String menu) {
+    final regex = RegExp(r'🔥 (\d+)kcal');
+    final matches = regex.allMatches(menu);
+    if (matches.isEmpty) return '';
+
+    final calories = matches.map((m) => int.parse(m.group(1)!)).toList();
+    final minCal = calories.reduce((a, b) => a < b ? a : b);
+    final maxCal = calories.reduce((a, b) => a > b ? a : b);
+    return '*Estimated Calories:* ${minCal}-${maxCal} kcal\n';
+  }
 
   Future<String> askLLMAboutDietaryOptions(
-      List<Map<String, String>> menus, Map<String, String> userPreferences, String city) async {
+      List<Map<String, dynamic>> menus, Map<String, String> userPreferences, String city) async {
     if (menus.isEmpty) return "No menus available to analyze.";
 
     String dietaryRestrictions = userPreferences["dietaryRestrictions"] ?? "None";
@@ -105,7 +159,7 @@ class FoodScraper {
     Lunch options in (city) for [LIST HERE MY DIETARY RESTRICTIONS AND ALLERGIES THAT I PROVIDED]
     📍 Restaurant Name
     ⏰ Opening Hours  
-    🍽 Dish Name (Dietary Info, if applicable)* - 💰 Price  
+    🍽 Dish Name (Dietary Info, if applicable)* - 💰 Price - 🔥 Calories
     📝 Dish Description 
     ✅ Why this dish is recommended for me
     🔗 [More Info](restaurant link)  
@@ -113,14 +167,14 @@ class FoodScraper {
     Example Output:
     📍 Green Bites Café
     ⏰ 11:00-14:00  
-    🍽 Quinoa Salad (Vegetarian, Gluten-Free) - 💰 €9.90  
+    🍽 Quinoa Salad (Vegetarian, Gluten-Free) - 💰 €9.90  - 🔥 420kcal
     📝 A fresh salad made with organic quinoa, cherry tomatoes, avocado, and a zesty lemon dressing.  
     ✅ High in protein and fiber, perfect for a balanced vegetarian meal.  
     🔗 [More Info](https://example.com)  
 
     📍 Healthy Eats Deli
     ⏰ 10:30-15:00  
-    🍽 Grilled Salmon with Steamed Vegetables (High-Protein, Omega-3 Rich) - 💰 €12.50 
+    🍽 Grilled Salmon with Steamed Vegetables (High-Protein, Omega-3 Rich) - 💰 €12.50 - 🔥 700kcal
     📝 A grilled Norwegian salmon fillet served with a mix of broccoli, carrots, and a light herb butter sauce.  
     ✅ Great for a high-protein diet, rich in omega-3 fatty acids for heart health.  
     🔗 [More Info](https://example.com)  

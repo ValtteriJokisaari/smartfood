@@ -25,7 +25,7 @@ class _HomeState extends State<Home> {
   final TextEditingController _cityController = TextEditingController();
 
   User? _user;
-  List<Map<String, String>> _restaurantMenuList = [];
+  List<Map<String, dynamic>> _restaurantMenuList = [];
   String _scraperMessage = "";
   String _aiResponse = "";
 
@@ -84,16 +84,26 @@ class _HomeState extends State<Home> {
   Future<void> _fetchMenus() async {
     setState(() {
       _scraperMessage = "Fetching menus...";
+      _restaurantMenuList = []; // Reset previous results
     });
 
-    List<Map<String, String>> restaurantMenuList = await _foodScraper.fetchLunchMenus(_cityController.text);
+    try {
+      final rawMenus = await _foodScraper.fetchLunchMenus(_cityController.text);
+      final enhancedMenus = await _foodScraper.enhanceWithNutrition(rawMenus);
 
-    setState(() {
-      _restaurantMenuList = restaurantMenuList;
-      _scraperMessage = restaurantMenuList.isNotEmpty ? "Menus fetched successfully!" : "No menus found.";
-    });
+      setState(() {
+        _restaurantMenuList = enhancedMenus;
+        _scraperMessage = enhancedMenus.isNotEmpty
+            ? "Menus fetched with nutrition data!"
+            : "No menus found.";
+      });
 
-    _filterMenusWithAI();
+      _filterMenusWithAI();
+    } catch (e) {
+      setState(() {
+        _scraperMessage = "Error fetching menus: ${e.toString()}";
+      });
+    }
   }
 
   Future<void> _filterMenusWithAI() async {
@@ -114,13 +124,19 @@ class _HomeState extends State<Home> {
       "bmi": _bmi,
     };
 
-    String response = await _foodScraper.askLLMAboutDietaryOptions(
-        _restaurantMenuList, userPreferences, _cityController.text
-    );
+    try {
+      String response = await _foodScraper.askLLMAboutDietaryOptions(
+          _restaurantMenuList, userPreferences, _cityController.text
+      );
 
-    setState(() {
-      _aiResponse = response;
-    });
+      setState(() {
+        _aiResponse = response;
+      });
+    } catch (e) {
+      setState(() {
+        _aiResponse = "Error analyzing menus: ${e.toString()}";
+      });
+    }
   }
 
   Future<void> _handleSignOut() async {
