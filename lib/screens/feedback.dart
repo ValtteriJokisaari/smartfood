@@ -38,6 +38,8 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   // Filtered menus based on the selected restaurant
   List<Map<String, String>> _filteredMenus = [];
 
+  int _rating = 0;  // Store the rating as an integer
+
   @override
   void initState() {
     super.initState();
@@ -62,11 +64,62 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     });
   }
 
+  void _toggleLikeRestaurant() {
+    setState(() {
+      if (_selectedRestaurant != null) {
+        if (_likedRestaurants.contains(_selectedRestaurant!)) {
+          _likedRestaurants.remove(_selectedRestaurant!);
+        } else {
+          _likedRestaurants.add(_selectedRestaurant!);
+          _dislikedRestaurants.remove(_selectedRestaurant!); // Ensure no conflict
+        }
+      }
+    });
+  }
+
+  void _toggleDislikeRestaurant() {
+    setState(() {
+      if (_selectedRestaurant != null) {
+        if (_dislikedRestaurants.contains(_selectedRestaurant!)) {
+          _dislikedRestaurants.remove(_selectedRestaurant!);
+        } else {
+          _dislikedRestaurants.add(_selectedRestaurant!);
+          _likedRestaurants.remove(_selectedRestaurant!); // Ensure no conflict
+        }
+      }
+    });
+  }
+
+  void _toggleLikeDish() {
+    setState(() {
+      if (_selectedDish != null) {
+        if (_likedFoods.contains(_selectedDish!)) {
+          _likedFoods.remove(_selectedDish!);
+        } else {
+          _likedFoods.add(_selectedDish!);
+          _dislikedFoods.remove(_selectedDish!); // Ensure no conflict
+        }
+      }
+    });
+  }
+
+  void _toggleDislikeDish() {
+    setState(() {
+      if (_selectedDish != null) {
+        if (_dislikedFoods.contains(_selectedDish!)) {
+          _dislikedFoods.remove(_selectedDish!);
+        } else {
+          _dislikedFoods.add(_selectedDish!);
+          _likedFoods.remove(_selectedDish!); // Ensure no conflict
+        }
+      }
+    });
+  }
+
   Future<void> _submitFeedback() async {
-    String rating = _ratingController.text;
     String comment = _commentController.text;
 
-    if (rating.isEmpty || comment.isEmpty || _selectedRestaurant == null || _selectedDish == null) {
+    if (comment.isEmpty || _selectedRestaurant == null || _selectedDish == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please fill all fields")),
       );
@@ -77,7 +130,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       Feedback feedback = Feedback(
         menuId: widget.menuId,
         userId: widget.userId,
-        rating: int.parse(rating),
+        rating: _rating,  // Using the stored rating value
         comment: comment,
         dietaryRestrictions: widget.dietaryRestrictions,
         allergies: widget.allergies,
@@ -153,14 +206,23 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
               const SizedBox(height: 10),
 
               // Rating input
-              TextField(
-                controller: _ratingController,
-                decoration: const InputDecoration(
-                  labelText: 'Rating (1-5)',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-                maxLength: 1, // Ensure rating is a single digit (1-5)
+              Row(
+                children: [
+                  const Text("Rating (0-5): "),
+                  Text("$_rating", style: TextStyle(fontSize: 20)),
+                ],
+              ),
+              Slider(
+                value: _rating.toDouble(),
+                min: 0,
+                max: 5,
+                divisions: 5,
+                label: _rating.toString(),
+                onChanged: (double newRating) {
+                  setState(() {
+                    _rating = newRating.toInt();
+                  });
+                },
               ),
               const SizedBox(height: 10),
               // Comment input
@@ -179,28 +241,18 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 children: [
                   const Text("Like this restaurant?"),
                   IconButton(
-                    icon: const Icon(Icons.thumb_up),
-                    onPressed: () {
-                      setState(() {
-                        if (_selectedRestaurant != null) {
-                          if (!_likedRestaurants.contains(_selectedRestaurant!)) {
-                            _likedRestaurants.add(_selectedRestaurant!);
-                          }
-                        }
-                      });
-                    },
+                    icon: Icon(
+                      Icons.thumb_up,
+                      color: _likedRestaurants.contains(_selectedRestaurant) ? Colors.green : null,
+                    ),
+                    onPressed: _toggleLikeRestaurant,
                   ),
                   IconButton(
-                    icon: const Icon(Icons.thumb_down),
-                    onPressed: () {
-                      setState(() {
-                        if (_selectedRestaurant != null) {
-                          if (!_dislikedRestaurants.contains(_selectedRestaurant!)) {
-                            _dislikedRestaurants.add(_selectedRestaurant!);
-                          }
-                        }
-                      });
-                    },
+                    icon: Icon(
+                      Icons.thumb_down,
+                      color: _dislikedRestaurants.contains(_selectedRestaurant) ? Colors.red : null,
+                    ),
+                    onPressed: _toggleDislikeRestaurant,
                   ),
                 ],
               ),
@@ -208,31 +260,33 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 children: [
                   const Text("Like this dish?"),
                   IconButton(
-                    icon: const Icon(Icons.thumb_up),
-                    onPressed: () {
-                      setState(() {
-                        if (_selectedDish != null) {
-                          if (!_likedFoods.contains(_selectedDish!)) {
-                            _likedFoods.add(_selectedDish!);
-                          }
-                        }
-                      });
-                    },
+                    icon: Icon(
+                      Icons.thumb_up,
+                      color: _likedFoods.contains(_selectedDish) ? Colors.green : null,
+                    ),
+                    onPressed: _toggleLikeDish,
                   ),
                   IconButton(
-                    icon: const Icon(Icons.thumb_down),
-                    onPressed: () {
-                      setState(() {
-                        if (_selectedDish != null) {
-                          if (!_dislikedFoods.contains(_selectedDish!)) {
-                            _dislikedFoods.add(_selectedDish!);
-                          }
-                        }
-                      });
-                    },
+                    icon: Icon(
+                      Icons.thumb_down,
+                      color: _dislikedFoods.contains(_selectedDish) ? Colors.red : null,
+                    ),
+                    onPressed: _toggleDislikeDish,
                   ),
                 ],
               ),
+              const SizedBox(height: 10),
+              
+              // Display liked and disliked items
+              if (_likedRestaurants.isNotEmpty) 
+                Text("Liked Restaurants: ${_likedRestaurants.join(', ')}"),
+              if (_dislikedRestaurants.isNotEmpty)
+                Text("Disliked Restaurants: ${_dislikedRestaurants.join(', ')}"),
+              if (_likedFoods.isNotEmpty)
+                Text("Liked Dishes: ${_likedFoods.join(', ')}"),
+              if (_dislikedFoods.isNotEmpty)
+                Text("Disliked Dishes: ${_dislikedFoods.join(', ')}"),
+              
               const SizedBox(height: 20),
               
               // Feedback submission button
