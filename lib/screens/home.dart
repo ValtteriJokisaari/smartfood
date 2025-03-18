@@ -136,11 +136,13 @@ class _HomeState extends State<Home> {
 
       try {
         List<Map<String, dynamic>> feedbackList = await _feedbackProcessor.getAllFeedbackFromFirestore(_user!.uid);
+        print(feedbackList);
         setState(() {
           rawFeedbackList = feedbackList;
         });
 
         String summary = await _feedbackProcessor.generateFeedbackSummary(feedbackList);
+        print(summary);
         setState(() {
           userFeedbackSummary = summary;
         });
@@ -248,6 +250,7 @@ class _HomeState extends State<Home> {
                       child: Text(
                         "Feedback Summary: $userFeedbackSummary",
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.visible,
                       ),
                     ),
                   if (rawFeedbackList.isNotEmpty)
@@ -256,6 +259,7 @@ class _HomeState extends State<Home> {
                       child: Text(
                         "Raw Feedback Data: ${rawFeedbackList.toString()}",
                         style: const TextStyle(fontSize: 16, color: Colors.red),
+                        overflow: TextOverflow.visible,
                       ),
                     ),
                   const SizedBox(height: 10),
@@ -320,4 +324,3 @@ class _HomeState extends State<Home> {
     );
   }
 }
-

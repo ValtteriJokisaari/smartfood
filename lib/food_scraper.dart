@@ -79,6 +79,7 @@ class FoodScraper {
     String bmi = userPreferences["bmi"] ?? "None";
 
     String formattedMenus = formatMenusForLLM(menus);
+    print("USERFEEDBACK" + userFeedbackSummary);
 
     String fullPrompt = """
     I am a user looking for lunch options in **$city**. Below are the available restaurant menus:
@@ -127,7 +128,10 @@ class FoodScraper {
     🍽 Grilled Salmon with Steamed Vegetables (High-Protein, Omega-3 Rich) - 💰 €12.50 
     📝 A grilled Norwegian salmon fillet served with a mix of broccoli, carrots, and a light herb butter sauce.  
     ✅ Great for a high-protein diet, rich in omega-3 fatty acids for heart health.  
-    🔗 [More Info](https://example.com)  
+    🔗 [More Info](https://example.com)
+
+
+    [SUMMARY OF PREVIOUS FEEDBACK if provided]  
 
 
     Please ensure your response is structured, concise, and **optimized for a mobile app layout**.
