@@ -37,7 +37,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   List<String> _likedFoods = [];
   List<String> _dislikedFoods = [];
 
-  int _rating = 0;  // Store the rating as an integer
+  int _rating = 0;
 
   @override
   void initState() {
@@ -47,15 +47,15 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   void _onRestaurantChanged(String? value) {
     setState(() {
       _selectedRestaurant = value;
-      _selectedDish = null; // Reset dish selection when restaurant changes
-      _commentController.clear(); // Clear general comment
+      _selectedDish = null;
+      _commentController.clear();
     });
   }
 
   void _onDishChanged(String? value) {
     setState(() {
       _selectedDish = value;
-      _commentController.clear(); // Clear general comment when dish changes
+      _commentController.clear();
     });
   }
 
@@ -66,7 +66,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           _likedRestaurants.remove(_selectedRestaurant!);
         } else {
           _likedRestaurants.add(_selectedRestaurant!);
-          _dislikedRestaurants.remove(_selectedRestaurant!); // Ensure no conflict
+          _dislikedRestaurants.remove(_selectedRestaurant!);
         }
       }
     });
@@ -79,7 +79,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           _dislikedRestaurants.remove(_selectedRestaurant!);
         } else {
           _dislikedRestaurants.add(_selectedRestaurant!);
-          _likedRestaurants.remove(_selectedRestaurant!); // Ensure no conflict
+          _likedRestaurants.remove(_selectedRestaurant!);
         }
       }
     });
@@ -92,7 +92,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           _likedFoods.remove(_selectedDish!);
         } else {
           _likedFoods.add(_selectedDish!);
-          _dislikedFoods.remove(_selectedDish!); // Ensure no conflict
+          _dislikedFoods.remove(_selectedDish!);
         }
       }
     });
@@ -105,7 +105,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           _dislikedFoods.remove(_selectedDish!);
         } else {
           _dislikedFoods.add(_selectedDish!);
-          _likedFoods.remove(_selectedDish!); // Ensure no conflict
+          _likedFoods.remove(_selectedDish!);
         }
       }
     });
@@ -174,7 +174,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: <Widget>[
-              // Restaurant selection dropdown
               DropdownButton<String>(
                 value: _selectedRestaurant,
                 hint: const Text("Select Restaurant"),
@@ -184,11 +183,10 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                     value: menu['restaurant'],
                     child: Text(menu['restaurant'] ?? ''),
                   );
-                }).toSet().toList(), // Remove duplicates
+                }).toSet().toList(),
               ),
               const SizedBox(height: 10),
 
-              // Dish selection dropdown (show only dishes for the selected restaurant)
               DropdownButton<String>(
                 value: _selectedDish,
                 hint: const Text("Select Dish"),
@@ -204,7 +202,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
               ),
               const SizedBox(height: 10),
 
-              // Rating input
               Row(
                 children: [
                   const Text("Rating (0-5): "),
@@ -225,7 +222,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
               ),
               const SizedBox(height: 10),
               
-              // Comment input for restaurant (if any)
               if (_selectedRestaurant != null)
                 TextField(
                   controller: _restaurantComments.putIfAbsent(
@@ -240,7 +236,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 ),
               const SizedBox(height: 10),
               
-              // Comment input for dish (if any)
               if (_selectedDish != null)
                 TextField(
                   controller: _dishComments.putIfAbsent(
@@ -255,7 +250,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 ),
               const SizedBox(height: 10),
               
-              // General comment input
               TextField(
                 controller: _commentController,
                 decoration: const InputDecoration(
@@ -266,7 +260,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
               ),
               const SizedBox(height: 10),
               
-              // Like/Dislike Restaurant
               Row(
                 children: [
                   const Text("Like this restaurant?"),
@@ -287,7 +280,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 ],
               ),
               
-              // Like/Dislike Dish
               Row(
                 children: [
                   const Text("Like this dish?"),
@@ -310,7 +302,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
               
               const SizedBox(height: 20),
               
-              // Feedback submission button
               ElevatedButton(
                 onPressed: _submitFeedback,
                 child: const Text('Submit Feedback'),
