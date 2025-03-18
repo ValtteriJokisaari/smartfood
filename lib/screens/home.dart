@@ -142,35 +142,6 @@ class _HomeState extends State<Home> {
     }
   }
 
-  List<Map<String, String>> _parseAIResponse(String aiResponse) {
-      List<Map<String, String>> parsedMenus = [];
-      RegExp menuRegExp = RegExp(r"📍\s*(.*?)\s*⏰\s*(.*?)\s*🍽\s*(.*?)\s*-\s*💰\s*(.*?)\s*📝\s*(.*?)\s*(✅?.*?)(🔗\s*\[(.*?)\]\((.*?)\))?");
-      
-      Iterable<RegExpMatch> matches = menuRegExp.allMatches(aiResponse);
-      
-      for (var match in matches) {
-        String restaurant = match.group(1) ?? '';
-        String openingHours = match.group(2) ?? '';
-        String dish = match.group(3) ?? '';
-        String price = match.group(4) ?? '';
-        String description = match.group(5) ?? '';
-        String dietaryNotes = match.group(6) ?? '';
-        String moreInfoLink = match.group(8) ?? '';
-
-        parsedMenus.add({
-          'restaurant': restaurant,
-          'openingHours': openingHours,
-          'dish': dish,
-          'price': price,
-          'description': description,
-          'dietaryNotes': dietaryNotes,
-          'moreInfoLink': moreInfoLink,
-        });
-      }
-      
-      return parsedMenus;
-    }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -256,7 +227,7 @@ class _HomeState extends State<Home> {
                     const SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: () {
-                        List<Map<String, String>> parsedMenus = _parseAIResponse(_aiResponse);
+                        List<Map<String, String>> parsedMenus = _foodScraper.parseAIResponse(_aiResponse);
                         String menuId = DateTime.now().toIso8601String();
 
                         Navigator.push(

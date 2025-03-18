@@ -130,5 +130,35 @@ class FoodScraper {
     """;
 
         return await _openAIService.getResponse(fullPrompt);
-      }
     }
+    List<Map<String, String>> parseAIResponse(String aiResponse) {
+      List<Map<String, String>> parsedMenus = [];
+      RegExp menuRegExp = RegExp(r"📍\s*(.*?)\s*⏰\s*(.*?)\s*🍽\s*(.*?)\s*-\s*💰\s*(.*?)\s*📝\s*(.*?)\s*(✅?.*?)(🔗\s*\[(.*?)\]\((.*?)\))?");
+      
+      Iterable<RegExpMatch> matches = menuRegExp.allMatches(aiResponse);
+      
+      for (var match in matches) {
+        String restaurant = match.group(1) ?? '';
+        String openingHours = match.group(2) ?? '';
+        String dish = match.group(3) ?? '';
+        String price = match.group(4) ?? '';
+        String description = match.group(5) ?? '';
+        String dietaryNotes = match.group(6) ?? '';
+        String moreInfoLink = match.group(8) ?? '';
+
+        parsedMenus.add({
+          'restaurant': restaurant,
+          'openingHours': openingHours,
+          'dish': dish,
+          'price': price,
+          'description': description,
+          'dietaryNotes': dietaryNotes,
+          'moreInfoLink': moreInfoLink,
+        });
+      }
+      
+      return parsedMenus;
+    }
+    
+    }
+    

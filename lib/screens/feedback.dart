@@ -35,9 +35,24 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   String? _selectedRestaurant;
   String? _selectedDish;
 
+  // Filtered menus based on the selected restaurant
+  List<Map<String, String>> _filteredMenus = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredMenus = widget.menus;  // Initially, all menus are available
+  }
+
   void _onRestaurantChanged(String? value) {
     setState(() {
       _selectedRestaurant = value;
+      // Filter dishes based on the selected restaurant
+      _filteredMenus = widget.menus
+          .where((menu) => menu['restaurant'] == _selectedRestaurant)
+          .toList();
+      // Reset the dish selection
+      _selectedDish = null;
     });
   }
 
@@ -98,136 +113,141 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   }
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Submit Feedback"),
         backgroundColor: Colors.green[700],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: <Widget>[
-            // Restaurant selection dropdown
-            DropdownButton<String>(
-              value: _selectedRestaurant,
-              hint: const Text("Select Restaurant"),
-              onChanged: _onRestaurantChanged,
-              items: widget.menus.map((menu) {
-                return DropdownMenuItem<String>(
-                  value: menu['restaurant'],
-                  child: Text(menu['restaurant'] ?? ''),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 10),
-            
-            // Dish selection dropdown
-            DropdownButton<String>(
-              value: _selectedDish,
-              hint: const Text("Select Dish"),
-              onChanged: _onDishChanged,
-              items: widget.menus.map((menu) {
-                return DropdownMenuItem<String>(
-                  value: menu['dish'],
-                  child: Text(menu['dish'] ?? ''),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 10),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: <Widget>[
+              // Restaurant selection dropdown
+              DropdownButton<String>(
+                value: _selectedRestaurant,
+                hint: const Text("Select Restaurant"),
+                onChanged: _onRestaurantChanged,
+                items: widget.menus.map((menu) {
+                  return DropdownMenuItem<String>(
+                    value: menu['restaurant'],
+                    child: Text(menu['restaurant'] ?? ''),
+                  );
+                }).toSet().toList(), // Remove duplicates
+              ),
+              const SizedBox(height: 10),
+              
+              // Dish selection dropdown (show only dishes for the selected restaurant)
+              DropdownButton<String>(
+                value: _selectedDish,
+                hint: const Text("Select Dish"),
+                onChanged: _onDishChanged,
+                items: _filteredMenus.map((menu) {
+                  return DropdownMenuItem<String>(
+                    value: menu['dish'],
+                    child: Text(menu['dish'] ?? ''),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 10),
 
-            // Rating input
-            TextField(
-              controller: _ratingController,
-              decoration: const InputDecoration(
-                labelText: 'Rating (1-5)',
-                border: OutlineInputBorder(),
+              // Rating input
+              TextField(
+                controller: _ratingController,
+                decoration: const InputDecoration(
+                  labelText: 'Rating (1-5)',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                maxLength: 1, // Ensure rating is a single digit (1-5)
               ),
-              keyboardType: TextInputType.number,
-              maxLength: 1, // Ensure rating is a single digit (1-5)
-            ),
-            const SizedBox(height: 10),
-            // Comment input
-            TextField(
-              controller: _commentController,
-              decoration: const InputDecoration(
-                labelText: 'Comment',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 10),
+              // Comment input
+              TextField(
+                controller: _commentController,
+                decoration: const InputDecoration(
+                  labelText: 'Comment',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 4,
               ),
-              maxLines: 4,
-            ),
-            const SizedBox(height: 10),
-            
-            // User feedback options for liking or disliking restaurant/dish
-            Row(
-              children: [
-                const Text("Like this restaurant?"),
-                IconButton(
-                  icon: const Icon(Icons.thumb_up),
-                  onPressed: () {
-                    setState(() {
-                      if (_selectedRestaurant != null) {
-                        _likedRestaurants.add(_selectedRestaurant!);
-                      }
-                    });
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.thumb_down),
-                  onPressed: () {
-                    setState(() {
-                      if (_selectedRestaurant != null) {
-                        _dislikedRestaurants.add(_selectedRestaurant!);
-                      }
-                    });
-                  },
-                ),
-              ],
-            ),
-            Row(
-              children: [
-                const Text("Like this dish?"),
-                IconButton(
-                  icon: const Icon(Icons.thumb_up),
-                  onPressed: () {
-                    setState(() {
-                      if (_selectedDish != null) {
-                        _likedFoods.add(_selectedDish!);
-                      }
-                    });
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.thumb_down),
-                  onPressed: () {
-                    setState(() {
-                      if (_selectedDish != null) {
-                        _dislikedFoods.add(_selectedDish!);
-                      }
-                    });
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            
-            // Feedback submission button
-            ElevatedButton(
-              onPressed: _submitFeedback,
-              child: const Text('Submit Feedback'),
-            ),
-            const SizedBox(height: 10),
-            // Feedback status message
-            Text(
-              _feedbackMessage,
-              style: TextStyle(color: Colors.green[700]),
-            ),
-          ],
+              const SizedBox(height: 10),
+              
+              // User feedback options for liking or disliking restaurant/dish
+              Row(
+                children: [
+                  const Text("Like this restaurant?"),
+                  IconButton(
+                    icon: const Icon(Icons.thumb_up),
+                    onPressed: () {
+                      setState(() {
+                        if (_selectedRestaurant != null) {
+                          if (!_likedRestaurants.contains(_selectedRestaurant!)) {
+                            _likedRestaurants.add(_selectedRestaurant!);
+                          }
+                        }
+                      });
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.thumb_down),
+                    onPressed: () {
+                      setState(() {
+                        if (_selectedRestaurant != null) {
+                          if (!_dislikedRestaurants.contains(_selectedRestaurant!)) {
+                            _dislikedRestaurants.add(_selectedRestaurant!);
+                          }
+                        }
+                      });
+                    },
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  const Text("Like this dish?"),
+                  IconButton(
+                    icon: const Icon(Icons.thumb_up),
+                    onPressed: () {
+                      setState(() {
+                        if (_selectedDish != null) {
+                          if (!_likedFoods.contains(_selectedDish!)) {
+                            _likedFoods.add(_selectedDish!);
+                          }
+                        }
+                      });
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.thumb_down),
+                    onPressed: () {
+                      setState(() {
+                        if (_selectedDish != null) {
+                          if (!_dislikedFoods.contains(_selectedDish!)) {
+                            _dislikedFoods.add(_selectedDish!);
+                          }
+                        }
+                      });
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              
+              // Feedback submission button
+              ElevatedButton(
+                onPressed: _submitFeedback,
+                child: const Text('Submit Feedback'),
+              ),
+              const SizedBox(height: 10),
+              // Feedback status message
+              Text(
+                _feedbackMessage,
+                style: TextStyle(color: Colors.green[700]),
+              ),
+            ],
+          ),
         ),
       ),
     );
