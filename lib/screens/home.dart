@@ -100,7 +100,8 @@ class _HomeState extends State<Home> {
       setState(() {
         _restaurantMenuList = enhancedMenus;
         _scraperMessage = enhancedMenus.isNotEmpty
-            ? "Menus fetched with nutrition data!"
+            ? "Menus fetched with nutrition data!\n"
+            "Note: Calorie values are indicative estimates and not exact measurements."
             : "No menus found.";
       });
 

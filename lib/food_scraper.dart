@@ -189,12 +189,11 @@ class FoodScraper {
     String dietaryRestrictions = userPreferences["dietaryRestrictions"] ?? "None";
     String allergies = userPreferences["allergies"] ?? "None";
     String bmi = userPreferences["bmi"] ?? "None";
-
     String formattedMenus = formatMenusForLLM(menus);
 
     String fullPrompt = """
     I am a user looking for lunch options in **$city**. Below are the available restaurant menus:
-
+  
     $formattedMenus
 
     ### User Preferences:
@@ -212,6 +211,7 @@ class FoodScraper {
     - If **no allergies are specified**, do not mention them in recommendations.
     - Show calories
     - Note all calorie values are per 100g
+    - Estimate if the specific food is calorie dense or not, even if calories are not provided
 
     ### Response Format:
     Provide a clear and structured response suitable for a **mobile app display**. Use the following format:
@@ -219,7 +219,9 @@ class FoodScraper {
     Lunch options in (city) for [LIST HERE MY DIETARY RESTRICTIONS AND ALLERGIES THAT I PROVIDED]
     📍 Restaurant Name
     ⏰ Opening Hours  
-    🍽 Dish Name (Dietary Info, if applicable)* - 💰 Price - 🔥 kcal/100g
+    🍽 Dish Name (Dietary Info, if applicable)* 
+    💰 Price 
+    🔥 Estimated x kcal/100g
     📝 Dish Description 
     ✅ Why this dish is recommended for me
     🔗 [More Info](restaurant link)  
@@ -227,14 +229,18 @@ class FoodScraper {
     Example Output:
     📍 Green Bites Café
     ⏰ 11:00-14:00  
-    🍽 Quinoa Salad (Vegetarian, Gluten-Free) - 💰 €9.90  - 🔥 420kcal/100g
+    🍽 Quinoa Salad (Vegetarian, Gluten-Free) 
+    💰 €9.90  
+    🔥 Estimated 50kcal/100g, low calorie density
     📝 A fresh salad made with organic quinoa, cherry tomatoes, avocado, and a zesty lemon dressing.  
     ✅ High in protein and fiber, perfect for a balanced vegetarian meal.  
     🔗 [More Info](https://example.com)  
 
     📍 Healthy Eats Deli
     ⏰ 10:30-15:00  
-    🍽 Grilled Salmon with Steamed Vegetables (High-Protein, Omega-3 Rich) - 💰 €12.50 - 🔥 700kcal/100g
+    🍽 Grilled Salmon with Steamed Vegetables (High-Protein, Omega-3 Rich) 
+    💰 €12.50 
+    🔥 Estimated 700kcal/100g, calorie dense
     📝 A grilled Norwegian salmon fillet served with a mix of broccoli, carrots, and a light herb butter sauce.  
     ✅ Great for a high-protein diet, rich in omega-3 fatty acids for heart health.  
     🔗 [More Info](https://example.com)  
