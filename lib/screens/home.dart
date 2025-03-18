@@ -35,7 +35,6 @@ class _HomeState extends State<Home> {
   String _allergies = "";
   String _bmi = "";
   String userFeedbackSummary = "";
-  List<Map<String, dynamic>> rawFeedbackList = [];
   bool usePreviousFeedback = false;
   bool _isFetchingFeedback = false;
 
@@ -133,16 +132,10 @@ class _HomeState extends State<Home> {
       setState(() {
         _isFetchingFeedback = true;
       });
-
       try {
         List<Map<String, dynamic>> feedbackList = await _feedbackProcessor.getAllFeedbackFromFirestore(_user!.uid);
-        print(feedbackList);
-        setState(() {
-          rawFeedbackList = feedbackList;
-        });
-
         String summary = await _feedbackProcessor.generateFeedbackSummary(feedbackList);
-        print(summary);
+        
         setState(() {
           userFeedbackSummary = summary;
         });
@@ -157,6 +150,7 @@ class _HomeState extends State<Home> {
       }
     }
   }
+
 
   Future<void> _handleSignOut() async {
     await _authService.signOut();
@@ -250,15 +244,6 @@ class _HomeState extends State<Home> {
                       child: Text(
                         "Feedback Summary: $userFeedbackSummary",
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        overflow: TextOverflow.visible,
-                      ),
-                    ),
-                  if (rawFeedbackList.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16.0),
-                      child: Text(
-                        "Raw Feedback Data: ${rawFeedbackList.toString()}",
-                        style: const TextStyle(fontSize: 16, color: Colors.red),
                         overflow: TextOverflow.visible,
                       ),
                     ),
