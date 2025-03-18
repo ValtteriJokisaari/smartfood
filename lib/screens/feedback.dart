@@ -26,41 +26,36 @@ class FeedbackScreen extends StatefulWidget {
 class _FeedbackScreenState extends State<FeedbackScreen> {
   final TextEditingController _ratingController = TextEditingController();
   final TextEditingController _commentController = TextEditingController();
-  String _feedbackMessage = "";
-  List<String> _likedRestaurants = [];
-  List<String> _dislikedRestaurants = [];
-  List<String> _likedFoods = [];
-  List<String> _dislikedFoods = [];
+  final Map<String, TextEditingController> _restaurantComments = {};
+  final Map<String, TextEditingController> _dishComments = {};
 
   String? _selectedRestaurant;
   String? _selectedDish;
 
-  // Filtered menus based on the selected restaurant
-  List<Map<String, String>> _filteredMenus = [];
+  List<String> _likedRestaurants = [];
+  List<String> _dislikedRestaurants = [];
+  List<String> _likedFoods = [];
+  List<String> _dislikedFoods = [];
 
   int _rating = 0;  // Store the rating as an integer
 
   @override
   void initState() {
     super.initState();
-    _filteredMenus = widget.menus;  // Initially, all menus are available
   }
 
   void _onRestaurantChanged(String? value) {
     setState(() {
       _selectedRestaurant = value;
-      // Filter dishes based on the selected restaurant
-      _filteredMenus = widget.menus
-          .where((menu) => menu['restaurant'] == _selectedRestaurant)
-          .toList();
-      // Reset the dish selection
-      _selectedDish = null;
+      _selectedDish = null; // Reset dish selection when restaurant changes
+      _commentController.clear(); // Clear general comment
     });
   }
 
   void _onDishChanged(String? value) {
     setState(() {
       _selectedDish = value;
+      _commentController.clear(); // Clear general comment when dish changes
     });
   }
 
@@ -117,34 +112,36 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   }
 
   Future<void> _submitFeedback() async {
-    String comment = _commentController.text;
-
-    if (comment.isEmpty || _selectedRestaurant == null || _selectedDish == null) {
+    if (_selectedRestaurant == null || _selectedDish == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill all fields")),
+        const SnackBar(content: Text("Please select a restaurant and a dish")),
       );
       return;
     }
+
+    String restaurantComment = _restaurantComments[_selectedRestaurant]?.text ?? "";
+    String dishComment = _dishComments[_selectedDish]?.text ?? "";
 
     try {
       Feedback feedback = Feedback(
         menuId: widget.menuId,
         userId: widget.userId,
-        rating: _rating,  // Using the stored rating value
-        comment: comment,
+        rating: _rating,
+        comment: _commentController.text,
         dietaryRestrictions: widget.dietaryRestrictions,
         allergies: widget.allergies,
         timestamp: Timestamp.now(),
         aiResponse: widget.aiResponse,
         restaurant: _selectedRestaurant!,
         dish: _selectedDish!,
+        restaurantComment: restaurantComment,
+        dishComment: dishComment,
         likedRestaurants: _likedRestaurants,
         dislikedRestaurants: _dislikedRestaurants,
         likedFoods: _likedFoods,
         dislikedFoods: _dislikedFoods,
       );
 
-      // Send feedback to Firestore under the user's specific menu
       await FirebaseFirestore.instance
           .collection('feedback')
           .doc(widget.userId)
@@ -190,13 +187,15 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 }).toSet().toList(), // Remove duplicates
               ),
               const SizedBox(height: 10),
-              
+
               // Dish selection dropdown (show only dishes for the selected restaurant)
               DropdownButton<String>(
                 value: _selectedDish,
                 hint: const Text("Select Dish"),
                 onChanged: _onDishChanged,
-                items: _filteredMenus.map((menu) {
+                items: widget.menus
+                    .where((menu) => menu['restaurant'] == _selectedRestaurant)
+                    .map((menu) {
                   return DropdownMenuItem<String>(
                     value: menu['dish'],
                     child: Text(menu['dish'] ?? ''),
@@ -225,18 +224,49 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 },
               ),
               const SizedBox(height: 10),
-              // Comment input
+              
+              // Comment input for restaurant (if any)
+              if (_selectedRestaurant != null)
+                TextField(
+                  controller: _restaurantComments.putIfAbsent(
+                    _selectedRestaurant!,
+                    () => TextEditingController(),
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Comment for ${_selectedRestaurant!}',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
+                ),
+              const SizedBox(height: 10),
+              
+              // Comment input for dish (if any)
+              if (_selectedDish != null)
+                TextField(
+                  controller: _dishComments.putIfAbsent(
+                    _selectedDish!,
+                    () => TextEditingController(),
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Comment for ${_selectedDish!}',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
+                ),
+              const SizedBox(height: 10),
+              
+              // General comment input
               TextField(
                 controller: _commentController,
                 decoration: const InputDecoration(
-                  labelText: 'Comment',
+                  labelText: 'General Comment',
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 4,
               ),
               const SizedBox(height: 10),
               
-              // User feedback options for liking or disliking restaurant/dish
+              // Like/Dislike Restaurant
               Row(
                 children: [
                   const Text("Like this restaurant?"),
@@ -256,6 +286,8 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   ),
                 ],
               ),
+              
+              // Like/Dislike Dish
               Row(
                 children: [
                   const Text("Like this dish?"),
@@ -275,17 +307,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-              
-              // Display liked and disliked items
-              if (_likedRestaurants.isNotEmpty) 
-                Text("Liked Restaurants: ${_likedRestaurants.join(', ')}"),
-              if (_dislikedRestaurants.isNotEmpty)
-                Text("Disliked Restaurants: ${_dislikedRestaurants.join(', ')}"),
-              if (_likedFoods.isNotEmpty)
-                Text("Liked Dishes: ${_likedFoods.join(', ')}"),
-              if (_dislikedFoods.isNotEmpty)
-                Text("Disliked Dishes: ${_dislikedFoods.join(', ')}"),
               
               const SizedBox(height: 20),
               
@@ -293,12 +314,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
               ElevatedButton(
                 onPressed: _submitFeedback,
                 child: const Text('Submit Feedback'),
-              ),
-              const SizedBox(height: 10),
-              // Feedback status message
-              Text(
-                _feedbackMessage,
-                style: TextStyle(color: Colors.green[700]),
               ),
             ],
           ),
@@ -320,6 +335,8 @@ class Feedback {
   final String aiResponse;
   final String restaurant;
   final String dish;
+  final String restaurantComment;
+  final String dishComment;
   final List<String> likedRestaurants;
   final List<String> dislikedRestaurants;
   final List<String> likedFoods;
@@ -336,6 +353,8 @@ class Feedback {
     required this.aiResponse,
     required this.restaurant,
     required this.dish,
+    required this.restaurantComment,
+    required this.dishComment,
     required this.likedRestaurants,
     required this.dislikedRestaurants,
     required this.likedFoods,
@@ -355,6 +374,8 @@ class Feedback {
       'aiResponse': aiResponse,
       'restaurant': restaurant,
       'dish': dish,
+      'restaurantComment': restaurantComment,
+      'dishComment': dishComment,
       'likedRestaurants': likedRestaurants,
       'dislikedRestaurants': dislikedRestaurants,
       'likedFoods': likedFoods,
