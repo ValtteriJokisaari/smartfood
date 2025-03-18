@@ -71,7 +71,7 @@ class FoodScraper {
   }
 
   Future<String> askLLMAboutDietaryOptions(
-      List<Map<String, String>> menus, Map<String, String> userPreferences, String city) async {
+      List<Map<String, String>> menus, Map<String, String> userPreferences, String city, String userFeedbackSummary) async {
     if (menus.isEmpty) return "No menus available to analyze.";
 
     String dietaryRestrictions = userPreferences["dietaryRestrictions"] ?? "None";
@@ -89,6 +89,10 @@ class FoodScraper {
     - **Dietary Restrictions:** $dietaryRestrictions
     - **Allergies:** $allergies
     - **BMI:** $bmi
+
+    ### Use previous user feedback to provide better suggestions:
+
+    $userFeedbackSummary
 
     ### Instructions:
     - Identify **dishes that match my dietary needs** while avoiding allergens and taking into account my dietary restrictions.
