@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as html;
 import 'database_service.dart';
@@ -60,6 +61,51 @@ class FoodScraper {
     }
   }
 
+  double _cosineSimilarity(String a, String b) {
+    final tokensA = _tokenize(a);
+    final tokensB = _tokenize(b);
+
+    final allTokens = Set<String>.from(tokensA.keys)..addAll(tokensB.keys);
+
+    double dotProduct = 0;
+    double magA = 0;
+    double magB = 0;
+
+    allTokens.forEach((token) {
+      final aCount = tokensA[token] ?? 0;
+      final bCount = tokensB[token] ?? 0;
+      dotProduct += aCount * bCount;
+      magA += aCount * aCount;
+      magB += bCount * bCount;
+    });
+
+    if (magA == 0 || magB == 0) return 0.0;
+
+    return dotProduct / (sqrt(magA) * sqrt(magB));
+  }
+
+  Map<String, int> _tokenize(String text) {
+    const stopWords = {
+      'ja', 'sekä', 'tai', 'kanssa', 'ilman', 'sisältää', 'sis.', 'sisältyy',
+      'l', 'g', 've', 'm', 'ga', 'vl', 'vs', 'v', 'sek', 'jne', 'myös', 'kyllä',
+      'ei', 'sekään', 'niin', 'että', 'kun', 'koska', 'jotta', 'ellei', 'vaan'
+    };
+
+    return text
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^\w\såäö-]'), '')
+        .split(RegExp(r'\s+'))
+        .where((token) => token.isNotEmpty && !stopWords.contains(token))
+        .fold<Map<String, int>>({}, (map, token) {
+      final baseForm = token
+          .replaceAll(RegExp(r'(lla|llä|ssa|ssä|sta|stä|lle|ksi|ineen|t)$'), '')
+          .replaceAll(RegExp(r'(ia|iä|ja|jä|a|ä)$'), '');
+
+      map[baseForm] = (map[baseForm] ?? 0) + 1;
+      return map;
+    });
+  }
+
   Future<List<Map<String, dynamic>>> enhanceWithNutrition(List<Map<String, String>> menus) async {
     List<Map<String, dynamic>> enhancedMenus = [];
 
@@ -73,12 +119,23 @@ class FoodScraper {
           continue;
         }
 
-        // Extract dish name
         final dishPart = item.split('•').last.split(RegExp(r'[-–]')).first.trim();
         final dishName = dishPart.replaceAll(RegExp(r'\(.*?\)'), '').trim();
-        final matches = await _dbService.searchSimilarFoods(dishName);
 
-        if (matches.isNotEmpty && matches.first['similarity'] > 0.4) {
+        final candidates = await _dbService.searchFoodCandidates(dishName);
+
+        // Calculate cosine similarity for each candidate
+        final matches = candidates.map((candidate) {
+          final candidateName = candidate['foodname'] as String;
+          return {
+            'foodid': candidate['foodid'],
+            'similarity': _cosineSimilarity(dishName, candidateName),
+          };
+        }).where((match) => match['similarity'] > 0.4).toList();
+
+        matches.sort((a, b) => (b['similarity'] as double).compareTo(a['similarity'] as double));
+
+        if (matches.isNotEmpty) {
           final bestMatch = matches.first;
           final energy = await _dbService.getEnergyValues(bestMatch['foodid'] as int);
 
@@ -113,6 +170,7 @@ class FoodScraper {
     }
     return prompt.toString();
   }
+
   String _extractCalorieInfo(String menu) {
     final regex = RegExp(r'🔥 (\d+)kcal');
     final matches = regex.allMatches(menu);
@@ -121,7 +179,7 @@ class FoodScraper {
     final calories = matches.map((m) => int.parse(m.group(1)!)).toList();
     final minCal = calories.reduce((a, b) => a < b ? a : b);
     final maxCal = calories.reduce((a, b) => a > b ? a : b);
-    return '*Estimated Calories:* ${minCal}-${maxCal} kcal\n';
+    return '*Estimated Calories:* ${minCal}-${maxCal} kcal/100g\n';
   }
 
   Future<String> askLLMAboutDietaryOptions(
@@ -152,6 +210,8 @@ class FoodScraper {
     - If **BMI** is not provided, then ignore BMI
     - If **no specific dietary restrictions** are provided, suggest balanced and healthy options.
     - If **no allergies are specified**, do not mention them in recommendations.
+    - Show calories
+    - Note all calorie values are per 100g
 
     ### Response Format:
     Provide a clear and structured response suitable for a **mobile app display**. Use the following format:
@@ -159,7 +219,7 @@ class FoodScraper {
     Lunch options in (city) for [LIST HERE MY DIETARY RESTRICTIONS AND ALLERGIES THAT I PROVIDED]
     📍 Restaurant Name
     ⏰ Opening Hours  
-    🍽 Dish Name (Dietary Info, if applicable)* - 💰 Price - 🔥 Calories
+    🍽 Dish Name (Dietary Info, if applicable)* - 💰 Price - 🔥 kcal/100g
     📝 Dish Description 
     ✅ Why this dish is recommended for me
     🔗 [More Info](restaurant link)  
@@ -167,14 +227,14 @@ class FoodScraper {
     Example Output:
     📍 Green Bites Café
     ⏰ 11:00-14:00  
-    🍽 Quinoa Salad (Vegetarian, Gluten-Free) - 💰 €9.90  - 🔥 420kcal
+    🍽 Quinoa Salad (Vegetarian, Gluten-Free) - 💰 €9.90  - 🔥 420kcal/100g
     📝 A fresh salad made with organic quinoa, cherry tomatoes, avocado, and a zesty lemon dressing.  
     ✅ High in protein and fiber, perfect for a balanced vegetarian meal.  
     🔗 [More Info](https://example.com)  
 
     📍 Healthy Eats Deli
     ⏰ 10:30-15:00  
-    🍽 Grilled Salmon with Steamed Vegetables (High-Protein, Omega-3 Rich) - 💰 €12.50 - 🔥 700kcal
+    🍽 Grilled Salmon with Steamed Vegetables (High-Protein, Omega-3 Rich) - 💰 €12.50 - 🔥 700kcal/100g
     📝 A grilled Norwegian salmon fillet served with a mix of broccoli, carrots, and a light herb butter sauce.  
     ✅ Great for a high-protein diet, rich in omega-3 fatty acids for heart health.  
     🔗 [More Info](https://example.com)  

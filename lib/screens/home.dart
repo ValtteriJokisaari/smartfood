@@ -45,7 +45,13 @@ class _HomeState extends State<Home> {
     setState(() {
       _dietaryRestrictions = prefs.getString('dietaryRestrictions') ?? "None";
       _allergies = prefs.getString('allergies') ?? "None";
-      _bmi = prefs.getString('bmi') ?? "None";
+
+      final bmiValue = prefs.get('bmi');
+      if (bmiValue is double) {
+        _bmi = bmiValue.toString();
+      } else {
+        _bmi = bmiValue as String? ?? "None";
+      }
     });
 
     String? storedCity = prefs.getString('city');
