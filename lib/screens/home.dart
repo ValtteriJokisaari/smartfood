@@ -37,6 +37,7 @@ class _HomeState extends State<Home> {
   String userFeedbackSummary = "";
   bool usePreviousFeedback = false;
   bool _isFetchingFeedback = false;
+  bool _newFeedbackSubmitted = false;
 
   @override
   void initState() {
@@ -128,7 +129,7 @@ class _HomeState extends State<Home> {
   }
 
   Future<void> _fetchFeedbackSummary() async {
-    if (_user != null) {
+    if (_user != null && _newFeedbackSubmitted) {
       setState(() {
         _isFetchingFeedback = true;
       });
@@ -146,9 +147,18 @@ class _HomeState extends State<Home> {
       } finally {
         setState(() {
           _isFetchingFeedback = false;
+          _newFeedbackSubmitted = false;
         });
       }
     }
+  }
+
+  Future<void> _onFeedbackSubmitted() async {
+    setState(() {
+      _newFeedbackSubmitted = true;
+    });
+
+    _fetchFeedbackSummary();
   }
 
 
@@ -293,6 +303,7 @@ class _HomeState extends State<Home> {
                               dietaryRestrictions: _dietaryRestrictions,
                               allergies: _allergies,
                               aiResponse: _aiResponse,
+                              onFeedbackSubmitted: _onFeedbackSubmitted,
                             ),
                           ),
                         );

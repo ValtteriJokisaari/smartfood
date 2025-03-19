@@ -15,7 +15,7 @@ class OpenAIService {
         "Authorization": "Bearer $_apiKey",
       },
       body: jsonEncode({
-        "model": "4o-mini",
+        "model": "gpt-4o-mini",
         "messages": [
           {"role": "system", "content": "You are a helpful assistant."},
           {"role": "user", "content": prompt}

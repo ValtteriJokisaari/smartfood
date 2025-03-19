@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FeedbackScreen extends StatefulWidget {
+  final Function onFeedbackSubmitted; // track feedback submission for feedback summary refreshing elsewhere
+
   final String menuId;
   final String userId;
   final String dietaryRestrictions;
@@ -17,6 +19,7 @@ class FeedbackScreen extends StatefulWidget {
     required this.allergies,
     required this.aiResponse,
     required this.menus,
+    required this.onFeedbackSubmitted
   }) : super(key: key);
 
   @override
@@ -148,6 +151,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           .collection('menus')
           .doc(widget.menuId)
           .set(feedback.toMap());
+
+      // Notify the Home screen that feedback is submitted
+      widget.onFeedbackSubmitted();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Feedback submitted successfully!")),
