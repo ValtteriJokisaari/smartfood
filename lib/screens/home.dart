@@ -272,8 +272,9 @@ class _HomeState extends State<Home> {
                       setState(() {
                         usePreviousFeedback = value ?? false;
                       });
-                      if (usePreviousFeedback) {
+                      if (usePreviousFeedback && !isFeedbackFetched) {
                         _fetchFeedbackSummary();
+                        print("FETCHED FEEDBACK: $userFeedbackSummary");
                       }
                     },
                   ),
