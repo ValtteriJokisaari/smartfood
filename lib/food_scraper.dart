@@ -81,6 +81,14 @@ class FoodScraper {
     String formattedMenus = formatMenusForLLM(menus);
     print("USERFEEDBACK" + userFeedbackSummary);
 
+    String promptFeedbackString = "";
+    if (userFeedbackSummary.isNotEmpty) {
+      promptFeedbackString = """
+      ### Use previous user feedback to provide better suggestions:
+      
+      $userFeedbackSummary""";
+    }
+
     String fullPrompt = """
     I am a user looking for lunch options in **$city**. Below are the available restaurant menus:
 
@@ -91,9 +99,7 @@ class FoodScraper {
     - **Allergies:** $allergies
     - **BMI:** $bmi
 
-    ### Use previous user feedback to provide better suggestions:
-
-    $userFeedbackSummary
+    $promptFeedbackString
 
     ### Instructions:
     - Identify **dishes that match my dietary needs** while avoiding allergens and taking into account my dietary restrictions.
