@@ -7,6 +7,7 @@ import 'package:smartfood/food_scraper.dart';
 import 'package:smartfood/screens/signin.dart';
 import 'package:smartfood/screens/settings_screen.dart';
 import 'package:smartfood/screens/feedback.dart';
+import 'package:smartfood/process_feedback.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -21,6 +22,7 @@ class _HomeState extends State<Home> {
   final AuthService _authService = AuthService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FoodScraper _foodScraper = FoodScraper();
+  final FeedbackProcessor _feedbackProcessor = FeedbackProcessor();
 
   final TextEditingController _cityController = TextEditingController();
 
@@ -32,6 +34,9 @@ class _HomeState extends State<Home> {
   String _dietaryRestrictions = "";
   String _allergies = "";
   String _bmi = "";
+  String userFeedbackSummary = "";
+  bool usePreviousFeedback = false;
+  bool _isFetchingFeedback = false;
 
   @override
   void initState() {
@@ -62,8 +67,6 @@ class _HomeState extends State<Home> {
       setState(() {
         _user = user;
       });
-
-      // Check if user data already exists in Firestore, if not, save it
       _saveUserData(user);
     }
   }
@@ -114,14 +117,40 @@ class _HomeState extends State<Home> {
       "bmi": _bmi,
     };
 
+    String feedbackSummary = usePreviousFeedback ? userFeedbackSummary : "";
     String response = await _foodScraper.askLLMAboutDietaryOptions(
-        _restaurantMenuList, userPreferences, _cityController.text
+      _restaurantMenuList, userPreferences, _cityController.text, feedbackSummary
     );
 
     setState(() {
       _aiResponse = response;
     });
   }
+
+  Future<void> _fetchFeedbackSummary() async {
+    if (_user != null) {
+      setState(() {
+        _isFetchingFeedback = true;
+      });
+      try {
+        List<Map<String, dynamic>> feedbackList = await _feedbackProcessor.getAllFeedbackFromFirestore(_user!.uid);
+        String summary = await _feedbackProcessor.generateFeedbackSummary(feedbackList);
+        
+        setState(() {
+          userFeedbackSummary = summary;
+        });
+      } catch (e) {
+        setState(() {
+          userFeedbackSummary = "Error retrieving feedback: $e";
+        });
+      } finally {
+        setState(() {
+          _isFetchingFeedback = false;
+        });
+      }
+    }
+  }
+
 
   Future<void> _handleSignOut() async {
     await _authService.signOut();
@@ -194,6 +223,30 @@ class _HomeState extends State<Home> {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
+                  CheckboxListTile(
+                    title: const Text("Use previous feedback for suggestions"),
+                    value: usePreviousFeedback,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        usePreviousFeedback = value ?? false;
+                      });
+                      if (usePreviousFeedback) {
+                        _fetchFeedbackSummary();
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  if (_isFetchingFeedback)
+                    const CircularProgressIndicator(),
+                  if (!usePreviousFeedback && userFeedbackSummary.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16.0),
+                      child: Text(
+                        "Feedback Summary: $userFeedbackSummary",
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.visible,
+                      ),
+                    ),
                   const SizedBox(height: 10),
                   TextField(
                     controller: _cityController,
@@ -227,12 +280,15 @@ class _HomeState extends State<Home> {
                     const SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: () {
+                        List<Map<String, String>> parsedMenus = _foodScraper.parseAIResponse(_aiResponse);
                         String menuId = DateTime.now().toIso8601String();
+
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => FeedbackScreen(
                               menuId: menuId,
+                              menus: parsedMenus,
                               userId: _user?.uid ?? "",
                               dietaryRestrictions: _dietaryRestrictions,
                               allergies: _allergies,

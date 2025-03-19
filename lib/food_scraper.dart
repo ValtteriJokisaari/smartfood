@@ -71,7 +71,7 @@ class FoodScraper {
   }
 
   Future<String> askLLMAboutDietaryOptions(
-      List<Map<String, String>> menus, Map<String, String> userPreferences, String city) async {
+      List<Map<String, String>> menus, Map<String, String> userPreferences, String city, String userFeedbackSummary) async {
     if (menus.isEmpty) return "No menus available to analyze.";
 
     String dietaryRestrictions = userPreferences["dietaryRestrictions"] ?? "None";
@@ -79,6 +79,7 @@ class FoodScraper {
     String bmi = userPreferences["bmi"] ?? "None";
 
     String formattedMenus = formatMenusForLLM(menus);
+    print("USERFEEDBACK" + userFeedbackSummary);
 
     String fullPrompt = """
     I am a user looking for lunch options in **$city**. Below are the available restaurant menus:
@@ -89,6 +90,10 @@ class FoodScraper {
     - **Dietary Restrictions:** $dietaryRestrictions
     - **Allergies:** $allergies
     - **BMI:** $bmi
+
+    ### Use previous user feedback to provide better suggestions:
+
+    $userFeedbackSummary
 
     ### Instructions:
     - Identify **dishes that match my dietary needs** while avoiding allergens and taking into account my dietary restrictions.
@@ -123,12 +128,45 @@ class FoodScraper {
     🍽 Grilled Salmon with Steamed Vegetables (High-Protein, Omega-3 Rich) - 💰 €12.50 
     📝 A grilled Norwegian salmon fillet served with a mix of broccoli, carrots, and a light herb butter sauce.  
     ✅ Great for a high-protein diet, rich in omega-3 fatty acids for heart health.  
-    🔗 [More Info](https://example.com)  
+    🔗 [More Info](https://example.com)
+
+
+    [SUMMARY OF PREVIOUS FEEDBACK if provided]  
 
 
     Please ensure your response is structured, concise, and **optimized for a mobile app layout**.
     """;
 
         return await _openAIService.getResponse(fullPrompt);
-      }
     }
+    List<Map<String, String>> parseAIResponse(String aiResponse) {
+      List<Map<String, String>> parsedMenus = [];
+      RegExp menuRegExp = RegExp(r"📍\s*(.*?)\s*⏰\s*(.*?)\s*🍽\s*(.*?)\s*-\s*💰\s*(.*?)\s*📝\s*(.*?)\s*(✅?.*?)(🔗\s*\[(.*?)\]\((.*?)\))?");
+      
+      Iterable<RegExpMatch> matches = menuRegExp.allMatches(aiResponse);
+      
+      for (var match in matches) {
+        String restaurant = match.group(1) ?? '';
+        String openingHours = match.group(2) ?? '';
+        String dish = match.group(3) ?? '';
+        String price = match.group(4) ?? '';
+        String description = match.group(5) ?? '';
+        String dietaryNotes = match.group(6) ?? '';
+        String moreInfoLink = match.group(8) ?? '';
+
+        parsedMenus.add({
+          'restaurant': restaurant,
+          'openingHours': openingHours,
+          'dish': dish,
+          'price': price,
+          'description': description,
+          'dietaryNotes': dietaryNotes,
+          'moreInfoLink': moreInfoLink,
+        });
+      }
+      
+      return parsedMenus;
+    }
+    
+    }
+    
