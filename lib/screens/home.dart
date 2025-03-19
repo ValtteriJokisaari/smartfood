@@ -38,6 +38,7 @@ class _HomeState extends State<Home> {
   bool usePreviousFeedback = false;
   bool _isFetchingFeedback = false;
   bool _newFeedbackSubmitted = false;
+  bool isFeedbackFetched = false;
 
   @override
   void initState() {
@@ -129,26 +130,29 @@ class _HomeState extends State<Home> {
   }
 
   Future<void> _fetchFeedbackSummary() async {
-    if (_user != null && _newFeedbackSubmitted) {
-      setState(() {
-        _isFetchingFeedback = true;
-      });
-      try {
-        List<Map<String, dynamic>> feedbackList = await _feedbackProcessor.getAllFeedbackFromFirestore(_user!.uid);
-        String summary = await _feedbackProcessor.generateFeedbackSummary(feedbackList);
-        
+    if (_user != null && (_newFeedbackSubmitted || usePreviousFeedback)) {
+      if (!isFeedbackFetched || _newFeedbackSubmitted) {
         setState(() {
-          userFeedbackSummary = summary;
+          _isFetchingFeedback = true;
         });
-      } catch (e) {
-        setState(() {
-          userFeedbackSummary = "Error retrieving feedback: $e";
-        });
-      } finally {
-        setState(() {
-          _isFetchingFeedback = false;
-          _newFeedbackSubmitted = false;
-        });
+        try {
+          List<Map<String, dynamic>> feedbackList = await _feedbackProcessor.getAllFeedbackFromFirestore(_user!.uid);
+          String summary = await _feedbackProcessor.generateFeedbackSummary(feedbackList);
+          
+          setState(() {
+            userFeedbackSummary = summary;
+            isFeedbackFetched = true;
+          });
+        } catch (e) {
+          setState(() {
+            userFeedbackSummary = "Error retrieving feedback: $e";
+          });
+        } finally {
+          setState(() {
+            _isFetchingFeedback = false;
+            _newFeedbackSubmitted = false;
+          });
+        }
       }
     }
   }
@@ -159,8 +163,8 @@ class _HomeState extends State<Home> {
     });
 
     _fetchFeedbackSummary();
+    print("NEW FEEDBACK WAS SUBMITTED, FETCHED FEEDBACK SUMMARY: $userFeedbackSummary");
   }
-
 
   Future<void> _handleSignOut() async {
     await _authService.signOut();
@@ -240,23 +244,16 @@ class _HomeState extends State<Home> {
                       setState(() {
                         usePreviousFeedback = value ?? false;
                       });
-                      if (usePreviousFeedback) {
+                      if (usePreviousFeedback && !isFeedbackFetched) {
                         _fetchFeedbackSummary();
+                        print("FETCHED FEEDBACK: $userFeedbackSummary");
                       }
                     },
                   ),
                   const SizedBox(height: 10),
                   if (_isFetchingFeedback)
                     const CircularProgressIndicator(),
-                  if (!usePreviousFeedback && userFeedbackSummary.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16.0),
-                      child: Text(
-                        "Feedback Summary: $userFeedbackSummary",
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        overflow: TextOverflow.visible,
-                      ),
-                    ),
+                    
                   const SizedBox(height: 10),
                   TextField(
                     controller: _cityController,
