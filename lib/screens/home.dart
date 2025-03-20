@@ -30,6 +30,7 @@ class _HomeState extends State<Home> {
   List<Map<String, String>> _restaurantMenuList = [];
   String _scraperMessage = "";
   String _aiResponse = "";
+  List<Map<String, String>> _parsedMenus = [];
 
   String _dietaryRestrictions = "";
   String _allergies = "";
@@ -39,6 +40,7 @@ class _HomeState extends State<Home> {
   bool _isFetchingFeedback = false;
   bool _newFeedbackSubmitted = false;
   bool isFeedbackFetched = false;
+  bool _isAscending = true;
 
   @override
   void initState() {
@@ -89,6 +91,8 @@ class _HomeState extends State<Home> {
   Future<void> _fetchMenus() async {
     setState(() {
       _scraperMessage = "Fetching menus...";
+      _aiResponse = "";
+      _parsedMenus = [];
     });
 
     List<Map<String, String>> restaurantMenuList = await _foodScraper.fetchLunchMenus(_cityController.text);
@@ -98,7 +102,7 @@ class _HomeState extends State<Home> {
       _scraperMessage = restaurantMenuList.isNotEmpty ? "Menus fetched successfully!" : "No menus found.";
     });
 
-    _filterMenusWithAI();
+    await _filterMenusWithAI();
   }
 
   Future<void> _filterMenusWithAI() async {
@@ -126,6 +130,7 @@ class _HomeState extends State<Home> {
 
     setState(() {
       _aiResponse = response;
+      _parsedMenus = _sortParsedMenus(_foodScraper.parseAIResponse(_aiResponse));
     });
   }
 
@@ -183,6 +188,17 @@ class _HomeState extends State<Home> {
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       print("Could not launch $url");
     }
+  }
+
+  List<Map<String, String>> _sortParsedMenus(List<Map<String, String>> menus) {
+    menus.sort((a, b) {
+      double priceA = double.tryParse(
+          a['price']!.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0.0;
+      double priceB = double.tryParse(
+          b['price']!.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0.0;
+      return _isAscending ? priceA.compareTo(priceB) : priceB.compareTo(priceA);
+    });
+    return menus;
   }
 
   @override
@@ -253,7 +269,15 @@ class _HomeState extends State<Home> {
                   const SizedBox(height: 10),
                   if (_isFetchingFeedback)
                     const CircularProgressIndicator(),
-                    
+                  if (!usePreviousFeedback && userFeedbackSummary.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16.0),
+                      child: Text(
+                        "Feedback Summary: $userFeedbackSummary",
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   const SizedBox(height: 10),
                   TextField(
                     controller: _cityController,
@@ -261,6 +285,47 @@ class _HomeState extends State<Home> {
                       labelText: "Enter City",
                       border: OutlineInputBorder(),
                     ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      const Icon(Icons.attach_money, color: Colors.green),
+                      const SizedBox(width: 8),
+                      DropdownButton<bool>(
+                        value: _isAscending,
+                        items: [
+                          DropdownMenuItem<bool>(
+                            value: true,
+                            child: Row(
+                              children: const [
+                                Icon(Icons.arrow_upward, size: 18),
+                                SizedBox(width: 6),
+                                Text("Low to high"),
+                              ],
+                            ),
+                          ),
+                          DropdownMenuItem<bool>(
+                            value: false,
+                            child: Row(
+                              children: const [
+                                Icon(Icons.arrow_downward, size: 18),
+                                SizedBox(width: 6),
+                                Text("High to low"),
+                              ],
+                            ),
+                          ),
+                        ],
+                        onChanged: (bool? newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _isAscending = newValue;
+                              _parsedMenus = _sortParsedMenus(_parsedMenus);
+                            });
+                          }
+                        },
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 10),
                   ElevatedButton(
@@ -272,30 +337,58 @@ class _HomeState extends State<Home> {
                     _scraperMessage,
                     style: const TextStyle(fontSize: 16, color: Colors.blue),
                   ),
-                  if (_restaurantMenuList.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    if (_aiResponse.isNotEmpty)
-                      MarkdownBody(
-                        data: _aiResponse,
-                        onTapLink: (text, href, title) {
-                          if (href != null) {
-                            _launchURL(href);
-                          }
-                        },
-                        styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
-                      ),
-                    const SizedBox(height: 20),
+                  const SizedBox(height: 10),
+                  if (_parsedMenus.isNotEmpty)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: _parsedMenus.map((menu) {
+                        return Card(
+                          elevation: 2,
+                          margin: const EdgeInsets.symmetric(vertical: 6),
+                          child: Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "📍 ${menu['restaurant'] ?? ''}",
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text("⏰ ${menu['openingHours'] ?? ''}"),
+                                const SizedBox(height: 6),
+                                Text("🍽 ${menu['dish'] ?? ''} - 💰 ${menu['price'] ?? ''}"),
+                                const SizedBox(height: 6),
+                                Text("📝 ${menu['description'] ?? ''}"),
+                                const SizedBox(height: 6),
+                                Text("✅ ${menu['dietaryNotes'] ?? 'No specific notes'}"),
+                                const SizedBox(height: 6),
+                                TextButton(
+                                  onPressed: () => _launchURL(
+                                    menu['moreInfoLink']!.isNotEmpty ? menu['moreInfoLink']! : "#",
+                                  ),
+                                  child: const Text("🔗 More Info"),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  const SizedBox(height: 20),
+                  if (_parsedMenus.isNotEmpty)
                     ElevatedButton(
                       onPressed: () {
-                        List<Map<String, String>> parsedMenus = _foodScraper.parseAIResponse(_aiResponse);
                         String menuId = DateTime.now().toIso8601String();
-
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => FeedbackScreen(
                               menuId: menuId,
-                              menus: parsedMenus,
+                              menus: _parsedMenus,
                               userId: _user?.uid ?? "",
                               dietaryRestrictions: _dietaryRestrictions,
                               allergies: _allergies,
@@ -307,7 +400,6 @@ class _HomeState extends State<Home> {
                       },
                       child: const Text("Submit Feedback"),
                     ),
-                  ],
                 ],
               ),
             ),

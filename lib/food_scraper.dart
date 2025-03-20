@@ -147,8 +147,10 @@ class FoodScraper {
     }
     List<Map<String, String>> parseAIResponse(String aiResponse) {
       List<Map<String, String>> parsedMenus = [];
-      RegExp menuRegExp = RegExp(r"📍\s*(.*?)\s*⏰\s*(.*?)\s*🍽\s*(.*?)\s*-\s*💰\s*(.*?)\s*📝\s*(.*?)\s*(✅?.*?)(🔗\s*\[(.*?)\]\((.*?)\))?");
-      
+      RegExp menuRegExp = RegExp(
+          r"📍\s*(?:\*\*\s*)?(.*?)\s*(?:\*\*)?\s*⏰\s*(.*?)\s*🍽\s*(.*?)\s*-\s*💰\s*(.*?)\s*(?:I\s*)?📝\s*(.*?)\s*(?=✅)\s*✅\s*([\s\S]*?)(?=\s*🔗|$)(?:\s*🔗\s*\[(.*?)\]\((.*?)\))?",
+          dotAll: true
+      );
       Iterable<RegExpMatch> matches = menuRegExp.allMatches(aiResponse);
       
       for (var match in matches) {

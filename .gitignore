@@ -44,6 +44,17 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Generated Plugin Registrant Files for Linux, macOS, and Windows
+linux/flutter/generated_plugin_registrant.*
+linux/flutter/generated_plugins.cmake
+macos/Flutter/GeneratedPluginRegistrant.swift
+windows/flutter/generated_plugin_registrant.*
+windows/flutter/generated_plugins.cmake
+
+# Additional untracked files
+android/app/.cxx/
+devtools_options.yaml
+
 # Firebase related
 # api keys etc :DDD
 .env
