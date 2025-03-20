@@ -281,15 +281,6 @@ class _HomeState extends State<Home> {
                   const SizedBox(height: 10),
                   if (_isFetchingFeedback)
                     const CircularProgressIndicator(),
-                  if (!usePreviousFeedback && userFeedbackSummary.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16.0),
-                      child: Text(
-                        "Feedback Summary: $userFeedbackSummary",
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ),
                   const SizedBox(height: 10),
                   TextField(
                     controller: _cityController,
