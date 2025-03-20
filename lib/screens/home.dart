@@ -8,7 +8,7 @@ import 'package:smartfood/screens/signin.dart';
 import 'package:smartfood/screens/settings_screen.dart';
 import 'package:smartfood/screens/feedback.dart';
 import 'package:smartfood/process_feedback.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 
 class Home extends StatefulWidget {
@@ -23,7 +23,6 @@ class _HomeState extends State<Home> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FoodScraper _foodScraper = FoodScraper();
   final FeedbackProcessor _feedbackProcessor = FeedbackProcessor();
-
   final TextEditingController _cityController = TextEditingController();
 
   User? _user;
@@ -41,6 +40,9 @@ class _HomeState extends State<Home> {
   bool _newFeedbackSubmitted = false;
   bool isFeedbackFetched = false;
   bool _isAscending = true;
+
+  String _responseProgress = "";
+  bool _isAnalyzing = false;
 
   @override
   void initState() {
@@ -93,13 +95,18 @@ class _HomeState extends State<Home> {
       _scraperMessage = "Fetching menus...";
       _aiResponse = "";
       _parsedMenus = [];
+      _responseProgress = "";
+      _isAnalyzing = false;
     });
 
     List<Map<String, String>> restaurantMenuList = await _foodScraper.fetchLunchMenus(_cityController.text);
 
     setState(() {
       _restaurantMenuList = restaurantMenuList;
-      _scraperMessage = restaurantMenuList.isNotEmpty ? "Menus fetched successfully!" : "No menus found.";
+      _scraperMessage = restaurantMenuList.isNotEmpty
+          ? "Menus fetched with nutrition data!\n"
+          "Note: Calorie values are indicative estimates and not exact measurements."
+          : "No menus found.";
     });
 
     await _filterMenusWithAI();
@@ -109,12 +116,15 @@ class _HomeState extends State<Home> {
     if (_restaurantMenuList.isEmpty) {
       setState(() {
         _aiResponse = "No menus available to analyze.";
+        _responseProgress = "";
+        _isAnalyzing = false;
       });
       return;
     }
 
     setState(() {
-      _aiResponse = "Analyzing menus...";
+      _responseProgress = "Analyzing menus...";
+      _isAnalyzing = true;
     });
 
     Map<String, String> userPreferences = {
@@ -125,12 +135,14 @@ class _HomeState extends State<Home> {
 
     String feedbackSummary = usePreviousFeedback ? userFeedbackSummary : "";
     String response = await _foodScraper.askLLMAboutDietaryOptions(
-      _restaurantMenuList, userPreferences, _cityController.text, feedbackSummary
+        _restaurantMenuList, userPreferences, _cityController.text, feedbackSummary
     );
 
     setState(() {
       _aiResponse = response;
       _parsedMenus = _sortParsedMenus(_foodScraper.parseAIResponse(_aiResponse));
+      _responseProgress = "";
+      _isAnalyzing = false;
     });
   }
 
@@ -337,6 +349,20 @@ class _HomeState extends State<Home> {
                     _scraperMessage,
                     style: const TextStyle(fontSize: 16, color: Colors.blue),
                   ),
+                  if (_responseProgress.isNotEmpty)
+                    Column(
+                      children: [
+                        Text(
+                          _responseProgress,
+                          style: const TextStyle(fontSize: 16, color: Colors.blue),
+                        ),
+                        if (_isAnalyzing)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 10.0),
+                            child: CircularProgressIndicator(),
+                          ),
+                      ],
+                    ),
                   const SizedBox(height: 10),
                   if (_parsedMenus.isNotEmpty)
                     Column(
@@ -361,6 +387,8 @@ class _HomeState extends State<Home> {
                                 Text("⏰ ${menu['openingHours'] ?? ''}"),
                                 const SizedBox(height: 6),
                                 Text("🍽 ${menu['dish'] ?? ''} - 💰 ${menu['price'] ?? ''}"),
+                                const SizedBox(height: 6),
+                                Text("🔥 ${menu['calories'] ?? ''}"),
                                 const SizedBox(height: 6),
                                 Text("📝 ${menu['description'] ?? ''}"),
                                 const SizedBox(height: 6),
