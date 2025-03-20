@@ -262,6 +262,7 @@ class FoodScraper {
         'moreInfoLink': moreInfoLink,
         'calories': calories,
       });
+
     }
 
     return parsedMenus;
