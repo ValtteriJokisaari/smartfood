@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'database_service.dart';
 import 'firebase_options.dart';
 import 'screens/signin.dart';
 import 'screens/home.dart';
@@ -8,6 +9,7 @@ import 'screens/home.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+  await DatabaseService().database;
 
   try {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -25,7 +27,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: "SmartFood",
-      theme: ThemeData(primarySwatch: Colors.green, fontFamily: "Poiret"),
+      theme: ThemeData(primarySwatch: Colors.green),
       initialRoute: "/",  // Start at Sign In
       routes: {
         "/": (context) => const SignInScreen(), 
